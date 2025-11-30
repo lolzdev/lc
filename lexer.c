@@ -381,8 +381,8 @@ static void parse(lexer *l)
 lexer *lexer_init(char *source, usize size, arena *arena)
 {
 	lexer *lex = arena_alloc(arena, sizeof(lexer));
-	lex->column = 0;
-	lex->row = 0;
+	lex->column = 1;
+	lex->row = 1;
 	lex->index = 0;
 	lex->size = size;
 	lex->tokens = 0;
@@ -403,6 +403,7 @@ lexer *lexer_init(char *source, usize size, arena *arena)
 	trie_insert(keywords, lex->allocator, "case", TOKEN_CASE);
 	trie_insert(keywords, lex->allocator, "do", TOKEN_DO);
 	trie_insert(keywords, lex->allocator, "defer", TOKEN_DEFER);
+	trie_insert(keywords, lex->allocator, "return", TOKEN_RETURN);
 	trie_insert(keywords, lex->allocator, "module", TOKEN_MODULE);
 	trie_insert(keywords, lex->allocator, "static", TOKEN_STATIC);
 	trie_insert(keywords, lex->allocator, "const", TOKEN_CONST);

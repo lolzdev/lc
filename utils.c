@@ -3,6 +3,37 @@
 #include <string.h>
 #include <stdio.h>
 
+u64 parse_int(char *s, usize len)
+{
+	u64 int_part = 0;
+	for (usize i=0; i < len; i++) {
+		int_part = (int_part * 10) + (s[i] - '0');
+	}
+
+	return int_part;
+}
+
+f64 parse_float(char *s, usize len)
+{
+	f64 decimal_part = (f64)parse_int(s, len);
+	usize point_pos = 0;
+
+	for (usize i=0; i < len; i++) {
+		if (s[i] == '.') {
+			point_pos = i;
+			break;
+		}
+	}
+	point_pos += 1;
+
+	for (usize i=0; i < len - point_pos; i++) {
+		decimal_part /= 10.0;
+	}
+
+	return decimal_part;
+}
+
+
 void trie_insert(trie_node *root, arena *a, char *key, uint16_t value)
 {
 	trie_node *node = root;

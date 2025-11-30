@@ -20,6 +20,9 @@ typedef size_t usize;
 typedef float f32;
 typedef double f64;
 
+u64 parse_int(char *s, usize len);
+f64 parse_float(char *s, usize len);
+
 typedef struct {
 	usize capacity;
 	usize position;

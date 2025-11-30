@@ -3,8 +3,8 @@
 
 include config.mk
 
-SRC = cc.c utils.c lexer.c
-HDR = config.def.h utils.h
+SRC = cc.c utils.c lexer.c parser.c
+HDR = config.def.h utils.h lexer.h parser.h sema.h
 OBJ = ${SRC:.c=.o}
 
 all: options cc
