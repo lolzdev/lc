@@ -71,7 +71,11 @@ typedef enum {
 	TOKEN_STATIC,
 	TOKEN_CONST,
 	TOKEN_EXTERN,
-	TOKEN_VOLATILE
+	TOKEN_VOLATILE,
+
+	TOKEN_STRUCT,
+	TOKEN_ENUM,
+	TOKEN_UNION
 } token_type;
 
 typedef struct _token {

@@ -335,12 +335,20 @@ static void parse(lexer *l)
 			continue;
 		}
 
+		usize head = l->index;
+
+		if (c == '/' && l->source[l->index+1] == '/') {
+			while (l->source[l->index] != '\n') {
+				l->index += 1;
+			}
+			l->column += (l->index - head - 1);
+		}
+
 		if (isspace(c)) {
 			l->index += 1;
 			continue;
 		}
 
-		usize head = l->index;
 
 		if (parse_special(l)) {
 			l->column += (l->index - head - 1);
@@ -383,6 +391,9 @@ lexer *lexer_init(char *source, usize size, arena *arena)
 	lex->source = source;
 
 	keywords = arena_alloc(arena, sizeof(trie_node));
+	trie_insert(keywords, lex->allocator, "struct", TOKEN_STRUCT);
+	trie_insert(keywords, lex->allocator, "enum", TOKEN_ENUM);
+	trie_insert(keywords, lex->allocator, "union", TOKEN_UNION);
 	trie_insert(keywords, lex->allocator, "while", TOKEN_WHILE);
 	trie_insert(keywords, lex->allocator, "for", TOKEN_FOR);
 	trie_insert(keywords, lex->allocator, "goto", TOKEN_GOTO);
