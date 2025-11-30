@@ -1,19 +1,19 @@
-cc - C compiler
+lc - L compiler
 ============================
-cc is a C compiler. It can compile C code.
+lc is a L compiler. It can compile L code.
 
 
 Requirements
 ------------
-In order to build cc you need... a computer
+In order to build lc you need... a computer
 
 
 Installation
 ------------
-Edit config.mk to match your local setup (cc is installed into
+Edit config.mk to match your local setup (lc is installed into
 the /usr/local namespace by default).
 
-Afterwards enter the following command to build and install cc (if
+Afterwards enter the following command to build and install lc (if
 necessary as root):
 
     make clean install
@@ -21,4 +21,4 @@ necessary as root):
 
 Usage
 -----------
-cc file
+lc file

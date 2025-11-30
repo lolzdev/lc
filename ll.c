@@ -4,12 +4,10 @@
 #include "lexer.h"
 #include "parser.h"
 
-// Helper to print indentation
 void print_indent(int depth) {
-    for (int i = 0; i < depth; i++) printf("  ");
+	for (int i = 0; i < depth; i++) printf("  ");
 }
 
-// Helper to convert Binary Op enum to string
 const char* get_op_str(binary_op op) {
 	switch(op) {
 		case OP_PLUS: return "+";

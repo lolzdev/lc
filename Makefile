@@ -3,14 +3,14 @@
 
 include config.mk
 
-SRC = cc.c utils.c lexer.c parser.c
+SRC = lc.c utils.c lexer.c parser.c
 HDR = config.def.h utils.h lexer.h parser.h sema.h
 OBJ = ${SRC:.c=.o}
 
-all: options cc
+all: options lc
 
 options:
-	@echo cc build options:
+	@echo lc build options:
 	@echo "CFLAGS   = ${CFLAGS}"
 	@echo "LDFLAGS  = ${LDFLAGS}"
 	@echo "CC       = ${CC}"
@@ -26,30 +26,30 @@ config.h:
 users.h:
 	cp users.def.h $@
 
-cc: ${OBJ}
+lc: ${OBJ}
 	${CC} -o $@ ${OBJ} ${LDFLAGS}
 
 clean:
-	rm -f cc ${OBJ} cc-${VERSION}.tar.gz
+	rm -f lc ${OBJ} lc-${VERSION}.tar.gz
 
 dist: clean
-	mkdir -p cc-${VERSION}
+	mkdir -p lc-${VERSION}
 	cp -R LICENSE Makefile README config.mk\
-		cc.1 ${HDR} ${SRC} cc-${VERSION}
-	tar -cf cc-${VERSION}.tar cc-${VERSION}
-	gzip cc-${VERSION}.tar
-	rm -rf cc-${VERSION}
+		lc.1 ${HDR} ${SRC} lc-${VERSION}
+	tar -cf lc-${VERSION}.tar lc-${VERSION}
+	gzip lc-${VERSION}.tar
+	rm -rf lc-${VERSION}
 
 install: all
 	mkdir -p ${DESTDIR}${PREFIX}/bin
-	cp -f cc ${DESTDIR}${PREFIX}/bin
-	chmod 755 ${DESTDIR}${PREFIX}/bin/cc
+	cp -f lc ${DESTDIR}${PREFIX}/bin
+	chmod 755 ${DESTDIR}${PREFIX}/bin/lc
 	mkdir -p ${DESTDIR}${MANPREFIX}/man1
-	sed "s/VERSION/${VERSION}/g" < cc.1 > ${DESTDIR}${MANPREFIX}/man1/cc.1
-	chmod 644 ${DESTDIR}${MANPREFIX}/man1/cc.1
+	sed "s/VERSION/${VERSION}/g" < lc.1 > ${DESTDIR}${MANPREFIX}/man1/lc.1
+	chmod 644 ${DESTDIR}${MANPREFIX}/man1/lc.1
 
 uninstall:
-	rm -f ${DESTDIR}${PREFIX}/bin/cc\
-		${DESTDIR}${MANPREFIX}/man1/cc.1
+	rm -f ${DESTDIR}${PREFIX}/bin/lc\
+		${DESTDIR}${MANPREFIX}/man1/lc.1
 
 .PHONY: all options clean dist install uninstall
