@@ -97,9 +97,9 @@ void *arena_alloc(arena *a, usize size) {
 	return ret;
 }
 
-snapshot arena_snapshot(arena a)
+snapshot arena_snapshot(arena *a)
 {
-	return a.position;
+	return a->position;
 }
 
 void arena_reset_to_snapshot(arena *a, snapshot s)

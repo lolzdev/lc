@@ -43,7 +43,7 @@ arena arena_init(usize size);
  * does not have enough memory to allocate the requested space
  */
 void *arena_alloc(arena *a, usize size);
-snapshot arena_snapshot(arena a);
+snapshot arena_snapshot(arena *a);
 void arena_reset_to_snapshot(arena *a, snapshot s);
 void arena_reset(arena *a);
 /* This call should never fail, also, do we even care if it does? */

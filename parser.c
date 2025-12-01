@@ -82,6 +82,74 @@ static void error(parser *p, char *msg)
 	parser_sync(p);
 }
 
+
+static ast_node *parse_call(parser *p)
+{
+	ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+	node->type = NODE_CALL;
+	node->expr.call.name = peek(p)->lexeme;
+	node->expr.call.name_len = peek(p)->lexeme_len;
+	advance(p);
+	/* Skip also the opening `(` */
+	advance(p);
+	/* Call without parameters */
+	if (match(p, TOKEN_RPAREN)) {
+		node->expr.call.parameters = NULL;
+		return node;
+	}
+	
+	snapshot arena_start = arena_snapshot(p->allocator);
+	node->expr.call.parameters = arena_alloc(p->allocator, sizeof(ast_node));
+	node->expr.call.parameters->type = NODE_UNIT;
+	node->expr.call.parameters->expr.unit_node.expr = parse_expression(p);
+	ast_node *tail = node->expr.call.parameters;
+	node->expr.call.param_len = 1;
+
+	/* In this case, there is only one parameter */
+	if (match(p, TOKEN_RPAREN)) {
+		return node;
+	}
+
+	if (match(p, TOKEN_COMMA)) {
+		ast_node *expr = parse_expression(p);
+		if (expr) {
+			while (!match(p, TOKEN_RPAREN)) {
+				if (!match(p, TOKEN_COMMA)) {
+					error(p, "expected `)`.");
+					arena_reset_to_snapshot(p->allocator, arena_start);
+					return NULL;
+				}
+				tail->expr.unit_node.next = arena_alloc(p->allocator, sizeof(ast_node));
+				tail->expr.unit_node.next->expr.unit_node.expr = expr;
+				tail = tail->expr.unit_node.next;
+				tail->type = NODE_UNIT;
+				expr = parse_expression(p);
+				if (!expr) {
+					error(p, "expected `)`.");
+					arena_reset_to_snapshot(p->allocator, arena_start);
+					return NULL;
+				}
+				node->expr.call.param_len += 1;
+			}
+
+			tail->expr.unit_node.next = arena_alloc(p->allocator, sizeof(ast_node));
+			tail->expr.unit_node.next->expr.unit_node.expr = expr;
+			tail = tail->expr.unit_node.next;
+			tail->type = NODE_UNIT;
+		} else {
+			error(p, "expected expression.");
+			arena_reset_to_snapshot(p->allocator, arena_start);
+			return NULL;
+		}
+	} else {
+		error(p, "expected `)`.");
+		arena_reset_to_snapshot(p->allocator, arena_start);
+		return NULL;
+	}
+
+	return node;
+}
+
 /* Parse expressions with the highest precedence. */
 static ast_node *parse_factor(parser *p)
 {
@@ -96,7 +164,12 @@ static ast_node *parse_factor(parser *p)
 		node->type = NODE_FLOAT;
 		node->expr.flt = parse_float(t->lexeme, t->lexeme_len);
 		return node;
-	} else if (match(p, TOKEN_IDENTIFIER)) {
+	} else if (match_peek(p, TOKEN_IDENTIFIER)) {
+		/* If a `(` is found after an identifier, it should be a call. */
+		if (p->tokens->next && p->tokens->next->type == TOKEN_LPAREN) {
+			return parse_call(p);
+		}
+
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_IDENTIFIER;
 		node->expr.string.start = t->lexeme;

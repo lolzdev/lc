@@ -108,6 +108,14 @@ void print_ast(ast_node *node, int depth) {
 				current = current->expr.unit_node.next;
 			}
 			break;
+		case NODE_CALL: 
+			printf("Call: %.*s\n", (int)node->expr.call.name_len, node->expr.call.name);
+			current = node->expr.call.parameters;
+			while (current && current->type == NODE_UNIT) {
+				print_ast(current->expr.unit_node.expr, depth + 1);
+				current = current->expr.unit_node.next;
+			}
+			break;
 		case NODE_IF:
 			printf("IfStmt (Fields missing in struct)\n");
 			break;
