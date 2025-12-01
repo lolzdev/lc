@@ -1,6 +1,9 @@
 #include "parser.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+bool has_errors = false;
 
 ast_node *parse_expression(parser *p);
 
@@ -79,6 +82,7 @@ static void parser_sync(parser *p)
 static void error(parser *p, char *msg)
 {
 	printf("\x1b[31m\x1b[1merror\x1b[0m\x1b[1m:%ld:%ld:\x1b[0m %s\n", p->previous->position.row, p->previous->position.column, msg);
+	has_errors = true;
 	parser_sync(p);
 }
 
@@ -169,6 +173,7 @@ static ast_node *parse_factor(parser *p)
 		if (p->tokens->next && p->tokens->next->type == TOKEN_LPAREN) {
 			return parse_call(p);
 		}
+		advance(p);
 
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_IDENTIFIER;
@@ -343,7 +348,71 @@ ast_node *parse_expression(parser *p)
 		return node;
 	}
 
+	/*
+	 * If after parsing an expression a `++` or a `--` 
+	 * token is found, it should be a postfix expression.
+	 */
+	if (match(p, TOKEN_PLUS_PLUS) | match(p, TOKEN_MINUS_MINUS)) {
+		unary_op op;
+		switch (p->previous->type) {
+			case TOKEN_PLUS_PLUS:
+				op = UOP_INCR;
+				break;
+			case TOKEN_MINUS_MINUS:
+				op = UOP_DECR;
+				break;
+			default:
+				break;	
+		}
+
+		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+		node->type = NODE_POSTFIX;
+		node->expr.unary.operator = op;
+		node->expr.unary.right = left;
+
+		return node;
+	}
+
 	return left;
+}
+
+static ast_node *parse_statement(parser *p)
+{
+	if (match(p, TOKEN_BREAK)) {
+		if (!match(p, TOKEN_SEMICOLON)) {
+			error(p, "expected `;`.");
+			return NULL;
+		}
+		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+		node->type = NODE_BREAK;
+		return node;
+	} else if (match(p, TOKEN_RETURN)) {
+		ast_node *expr = parse_expression(p);
+
+		if (!expr) {
+			error(p, "expected expression.");
+			return NULL;
+		}
+		if (!match(p, TOKEN_SEMICOLON)) {
+			error(p, "expected `;`.");
+			return NULL;
+		}
+		
+		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+		node->type = NODE_RETURN;
+		node->expr.ret.value = expr;
+		return node;
+	} else  {
+		ast_node *expr = parse_expression(p);
+		if (!expr) {
+			return NULL;
+		}
+		if (!match(p, TOKEN_SEMICOLON)) {
+			error(p, "expected `;`.");
+			return NULL;
+		}
+		return expr;
+	} 
 }
 
 /* Get a list of expressions to form a full AST. */
@@ -351,15 +420,15 @@ static void parse(parser *p)
 {
 	p->ast = arena_alloc(p->allocator, sizeof(ast_node));
 	p->ast->type = NODE_UNIT;
-	p->ast->expr.unit_node.expr = parse_expression(p);
+	p->ast->expr.unit_node.expr = parse_statement(p);
 	ast_node *tail = p->ast;
-	ast_node *expr = parse_expression(p);
+	ast_node *expr = parse_statement(p);
 	while (expr) {
 		tail->expr.unit_node.next = arena_alloc(p->allocator, sizeof(ast_node));
 		tail->expr.unit_node.next->expr.unit_node.expr = expr;
 		tail = tail->expr.unit_node.next;
 		tail->type = NODE_UNIT;
-		expr = parse_expression(p);
+		expr = parse_statement(p);
 	}
 }
 
@@ -370,6 +439,11 @@ parser *parser_init(lexer *l, arena *allocator)
 	p->allocator= allocator;
 
 	parse(p);
+
+	if (has_errors) {
+		printf("Compilation failed.\n");
+		exit(1);
+	}
 
 	return p;
 }

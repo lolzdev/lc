@@ -90,6 +90,13 @@ void print_ast(ast_node *node, int depth) {
 			printf("UnaryOp (%s)\n", get_uop_str(node->expr.unary.operator));
 			print_ast(node->expr.unary.right, depth + 1);
 			break;
+		case NODE_POSTFIX:
+			printf("Postfix (%s)\n", get_uop_str(node->expr.unary.operator));
+			print_ast(node->expr.unary.right, depth + 1);
+			break;
+		case NODE_BREAK:
+			printf("Break\n");
+			break;
 		case NODE_TERNARY:
 			printf("Ternary (? :)\n");
 			print_indent(depth + 1); printf("Condition:\n");
@@ -125,7 +132,7 @@ void print_ast(ast_node *node, int depth) {
 		case NODE_VAR_DECL:
 			printf("VarDecl (Fields missing in struct)\n");
 			break;
-		case NODE_FUNCTION_DEF:
+		case NODE_FUNCTION:
 			printf("FunctionDef (Fields missing in struct)\n");
 			break;
 		case NODE_RETURN:

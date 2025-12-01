@@ -58,7 +58,7 @@ typedef struct {
 	char *name;
 	usize name_len;
 	member *params;
-} function_decl;
+} function;
 
 typedef enum {
 	NODE_IDENTIFIER,
@@ -73,23 +73,21 @@ typedef enum {
 	NODE_ACCESS,
 	NODE_CALL,
 	NODE_POSTFIX,
-	NODE_GOTO,
 	NODE_BREAK,
-	NODE_CASE,
+	NODE_RETURN,
 	NODE_SWITCH,
 	NODE_FOR,
 	NODE_DO,
 	NODE_WHILE,
 	NODE_IF,
-	NODE_RETURN,
 	NODE_COMPOUND,
 	NODE_ENUM,
 	NODE_STRUCT,
 	NODE_UNION,
 	NODE_VAR_DECL,
-	NODE_FUNCTION_DEF,
-	NODE_FUNCTION_DECL,
+	NODE_FUNCTION,
 	NODE_TERNARY,
+	NODE_GOTO,
 	NODE_UNIT,
 } node_type;
 
@@ -142,6 +140,9 @@ typedef struct _ast_node {
 			char *name;
 			usize name_len;
 		} call;
+		struct {
+			struct _ast_node *value;
+		} ret;
 	} expr;
 } ast_node;
 

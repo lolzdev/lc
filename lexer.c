@@ -400,7 +400,7 @@ lexer *lexer_init(char *source, usize size, arena *arena)
 	trie_insert(keywords, lex->allocator, "if", TOKEN_IF);
 	trie_insert(keywords, lex->allocator, "else", TOKEN_ELSE);
 	trie_insert(keywords, lex->allocator, "switch", TOKEN_SWITCH);
-	trie_insert(keywords, lex->allocator, "case", TOKEN_CASE);
+	trie_insert(keywords, lex->allocator, "break", TOKEN_BREAK);
 	trie_insert(keywords, lex->allocator, "do", TOKEN_DO);
 	trie_insert(keywords, lex->allocator, "defer", TOKEN_DEFER);
 	trie_insert(keywords, lex->allocator, "return", TOKEN_RETURN);
