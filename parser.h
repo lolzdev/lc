@@ -75,9 +75,10 @@ typedef enum {
 	NODE_POSTFIX,
 	NODE_BREAK,
 	NODE_RETURN,
-	NODE_SWITCH,
-	NODE_FOR,
+	NODE_LABEL,
+	NODE_GOTO,
 	NODE_DO,
+	NODE_FOR,
 	NODE_WHILE,
 	NODE_IF,
 	NODE_COMPOUND,
@@ -87,13 +88,17 @@ typedef enum {
 	NODE_VAR_DECL,
 	NODE_FUNCTION,
 	NODE_TERNARY,
-	NODE_GOTO,
+	NODE_SWITCH,
 	NODE_UNIT,
 } node_type;
 
 typedef struct _ast_node {
 	node_type type;
 	union {
+		struct {
+			char *name;
+			usize name_len;
+		} label; // both label and goto
 		struct {
 			struct _ast_node *left;
 			struct _ast_node *right;

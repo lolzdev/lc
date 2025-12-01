@@ -66,8 +66,7 @@ static void parser_sync(parser *p)
 			case TOKEN_STRUCT:
 			case TOKEN_ENUM:
 			case TOKEN_IF:
-			case TOKEN_WHILE:
-			case TOKEN_FOR:
+			case TOKEN_LOOP:
 			case TOKEN_DO:
 			case TOKEN_RETURN:
 			case TOKEN_SWITCH:
@@ -380,7 +379,7 @@ static ast_node *parse_statement(parser *p)
 {
 	if (match(p, TOKEN_BREAK)) {
 		if (!match(p, TOKEN_SEMICOLON)) {
-			error(p, "expected `;`.");
+			error(p, "expected `;` after `break`.");
 			return NULL;
 		}
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
@@ -390,7 +389,7 @@ static ast_node *parse_statement(parser *p)
 		ast_node *expr = parse_expression(p);
 
 		if (!expr) {
-			error(p, "expected expression.");
+			error(p, "expected expression after `return`.");
 			return NULL;
 		}
 		if (!match(p, TOKEN_SEMICOLON)) {
@@ -402,13 +401,38 @@ static ast_node *parse_statement(parser *p)
 		node->type = NODE_RETURN;
 		node->expr.ret.value = expr;
 		return node;
+	} else if (match_peek(p, TOKEN_IDENTIFIER) && p->tokens->next && p->tokens->next->type == TOKEN_COLON) {
+		/* In this case, this is a label. */
+		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+		node->type = NODE_LABEL;
+		node->expr.label.name = p->tokens->lexeme;
+		node->expr.label.name_len = p->tokens->lexeme_len;
+		advance(p);
+		/* Consume `:` */
+		advance(p);
+		return node;
+	} else if (match(p, TOKEN_GOTO)) {
+		if (!match_peek(p, TOKEN_IDENTIFIER)) {
+			error(p, "expected label identifier after `goto`.");
+			return NULL;
+		}
+		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+		node->type = NODE_GOTO;
+		node->expr.label.name = p->tokens->lexeme;
+		node->expr.label.name_len = p->tokens->lexeme_len;
+		advance(p);
+		if (!match(p, TOKEN_SEMICOLON)) {
+			error(p, "expected `;` after `goto`.");
+			return NULL;
+		}
+		return node;
 	} else  {
 		ast_node *expr = parse_expression(p);
 		if (!expr) {
 			return NULL;
 		}
 		if (!match(p, TOKEN_SEMICOLON)) {
-			error(p, "expected `;`.");
+			error(p, "expected `;` after expression.");
 			return NULL;
 		}
 		return expr;

@@ -76,6 +76,12 @@ void print_ast(ast_node *node, int depth) {
 			printf("Access: %.*s\n", (int)node->expr.access.member_len, node->expr.access.member);
 			print_ast(node->expr.access.expr, depth + 1);
 			break;
+		case NODE_LABEL:
+			printf("Label: %.*s\n", (int)node->expr.label.name_len, node->expr.label.name);
+			break;
+		case NODE_GOTO:
+			printf("Goto: %.*s\n", (int)node->expr.label.name_len, node->expr.label.name);
+			break;
 		case NODE_BINARY:
 			printf("BinaryOp (%s)\n", get_op_str(node->expr.binary.operator));
 			print_ast(node->expr.binary.left, depth + 1);
@@ -126,9 +132,6 @@ void print_ast(ast_node *node, int depth) {
 		case NODE_IF:
 			printf("IfStmt (Fields missing in struct)\n");
 			break;
-		case NODE_WHILE:
-			printf("WhileStmt (Fields missing in struct)\n");
-			break;
 		case NODE_VAR_DECL:
 			printf("VarDecl (Fields missing in struct)\n");
 			break;
@@ -136,7 +139,8 @@ void print_ast(ast_node *node, int depth) {
 			printf("FunctionDef (Fields missing in struct)\n");
 			break;
 		case NODE_RETURN:
-			printf("Return (Fields missing in struct)\n");
+			printf("Return:\n");
+			print_ast(node->expr.ret.value, depth + 1);
 			break;
 		default:
 			printf("Unknown Node Type: %d\n", node->type);

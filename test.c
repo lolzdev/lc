@@ -1,1 +1,3 @@
-x[3];
+test:
+goto test;
+return 5;

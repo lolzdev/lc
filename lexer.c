@@ -394,8 +394,7 @@ lexer *lexer_init(char *source, usize size, arena *arena)
 	trie_insert(keywords, lex->allocator, "struct", TOKEN_STRUCT);
 	trie_insert(keywords, lex->allocator, "enum", TOKEN_ENUM);
 	trie_insert(keywords, lex->allocator, "union", TOKEN_UNION);
-	trie_insert(keywords, lex->allocator, "while", TOKEN_WHILE);
-	trie_insert(keywords, lex->allocator, "for", TOKEN_FOR);
+	trie_insert(keywords, lex->allocator, "loop", TOKEN_LOOP);
 	trie_insert(keywords, lex->allocator, "goto", TOKEN_GOTO);
 	trie_insert(keywords, lex->allocator, "if", TOKEN_IF);
 	trie_insert(keywords, lex->allocator, "else", TOKEN_ELSE);
