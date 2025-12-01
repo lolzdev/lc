@@ -77,6 +77,11 @@ void print_ast(ast_node *node, int depth) {
 			print_ast(node->expr.binary.left, depth + 1);
 			print_ast(node->expr.binary.right, depth + 1);
 			break;
+		case NODE_ARRAY_SUBSCRIPT:
+			printf("Array subscript\n");
+			print_ast(node->expr.subscript.expr, depth + 1);
+			print_ast(node->expr.subscript.index, depth + 1);
+			break;
 		case NODE_UNARY:
 			printf("UnaryOp (%s)\n", get_uop_str(node->expr.unary.operator));
 			print_ast(node->expr.unary.right, depth + 1);

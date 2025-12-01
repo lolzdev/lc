@@ -233,6 +233,20 @@ ast_node *parse_expression(parser *p)
 		left = node;
 	}
 
+	if (match(p, TOKEN_LSQUARE)) {
+		ast_node *index = parse_expression(p);
+		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+		node->type = NODE_ARRAY_SUBSCRIPT;
+		node->expr.subscript.expr = left;
+		node->expr.subscript.index = index;
+
+		if (!match(p, TOKEN_RSQUARE)) {
+			error(p, "expected `]`.");
+			return NULL;
+		}
+		return node;
+	}
+
 	return left;
 }
 

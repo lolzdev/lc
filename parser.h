@@ -67,11 +67,9 @@ typedef enum {
 	NODE_FLOAT,
 	NODE_STRING,
 	NODE_CHAR,
-	NODE_TERNARY,
 	NODE_CAST,
 	NODE_ARRAY_SUBSCRIPT,
 	NODE_ACCESS,
-	NODE_ACCESS_PTR,
 	NODE_CALL,
 	NODE_POSTFIX,
 	NODE_UNARY,
@@ -93,8 +91,8 @@ typedef enum {
 	NODE_VAR_DECL,
 	NODE_FUNCTION_DEF,
 	NODE_FUNCTION_DECL,
+	NODE_TERNARY,
 	NODE_UNIT,
-	NODE_AS,
 } node_type;
 
 typedef struct _ast_node {
@@ -126,6 +124,10 @@ typedef struct _ast_node {
 			char *type;
 			usize type_len;
 		} cast;
+		struct {
+			struct _ast_node *expr;
+			struct _ast_node *index;
+		} subscript;
 		struct {
 			struct _ast_node *expr;
 			struct _ast_node *next;
