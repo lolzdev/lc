@@ -177,6 +177,19 @@ ast_node *parse_unary(parser *p)
 		return node;
 	}
 
+	/* Type cast. */
+	if (match_peek(p, TOKEN_LPAREN) && p->tokens->next && p->tokens->next->type == TOKEN_IDENTIFIER && p->tokens->next->next && p->tokens->next->next->type == TOKEN_RPAREN) {
+		advance(p);
+		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+		node->type = NODE_CAST;
+		node->expr.cast.type = peek(p)->lexeme;
+		node->expr.cast.type_len = peek(p)->lexeme_len;
+		advance(p);
+		advance(p);
+		node->expr.cast.value = parse_expression(p);
+		return node;
+	}
+
 end:
 	return parse_factor(p);
 }
