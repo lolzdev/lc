@@ -4,6 +4,7 @@
 
 ast_node *parse_expression(parser *p);
 
+/* Consume a token in the list. */
 static void advance(parser *p)
 {
 	p->previous = p->tokens;
@@ -11,11 +12,16 @@ static void advance(parser *p)
 		p->tokens = p->tokens->next;
 }
 
+/* Get the current token in the list, without consuming */
 static token *peek(parser *p)
 {
 	return p->tokens;
 }
 
+/*
+ * Check if the current token type is the same as `type`,
+ * without consuming it.
+ */
 static bool match_peek(parser *p, token_type type)
 {
 	if (p->tokens) {
@@ -25,6 +31,7 @@ static bool match_peek(parser *p, token_type type)
 	}
 }
 
+/* Same as `match_peek()` but it consumes the token. */
 static bool match(parser *p, token_type type)
 {
 	if (p->tokens) {
@@ -36,6 +43,13 @@ static bool match(parser *p, token_type type)
 	return false;
 }
 
+/*
+ * When an error is encountered, try to find a
+ * token that could define a part of the code
+ * which doesn't depend on the one giving the
+ * error. This is needed to print multiple errors
+ * instead of just failing at the first one.
+ */
 static void parser_sync(parser *p)
 {
 	advance(p);
@@ -61,12 +75,14 @@ static void parser_sync(parser *p)
 	}
 }
 
+/* Print the error message and sync the parser. */
 static void error(parser *p, char *msg)
 {
 	printf("\x1b[31m\x1b[1merror\x1b[0m\x1b[1m:%ld:%ld:\x1b[0m %s\n", p->previous->position.row, p->previous->position.column, msg);
 	parser_sync(p);
 }
 
+/* Parse expressions with the highest precedence. */
 static ast_node *parse_factor(parser *p)
 {
 	token *t = peek(p);
@@ -184,6 +200,10 @@ ast_node *parse_term(parser *p)
 	return left;
 }
 
+/*
+ * Following the recursive descent parser algorithm, this
+ * parses all the arithmetic expressions.
+ */
 ast_node *parse_expression(parser *p)
 {
 	ast_node *left = parse_term(p);
@@ -203,6 +223,7 @@ ast_node *parse_expression(parser *p)
 	return left;
 }
 
+/* Get a list of expressions to form a full AST. */
 static void parse(parser *p)
 {
 	p->ast = arena_alloc(p->allocator, sizeof(ast_node));
