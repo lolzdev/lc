@@ -130,6 +130,11 @@ typedef struct _ast_node {
 		} subscript;
 		struct {
 			struct _ast_node *expr;
+			char *member;
+			usize member_len;
+		} access;
+		struct {
+			struct _ast_node *expr;
 			struct _ast_node *next;
 		} unit_node;
 	} expr;

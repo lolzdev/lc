@@ -233,6 +233,10 @@ ast_node *parse_expression(parser *p)
 		left = node;
 	}
 
+	/*
+	 * If after parsing an expression a `[` character
+	 * is found, it should be an array subscript expression.
+	 */
 	if (match(p, TOKEN_LSQUARE)) {
 		ast_node *index = parse_expression(p);
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
@@ -244,6 +248,25 @@ ast_node *parse_expression(parser *p)
 			error(p, "expected `]`.");
 			return NULL;
 		}
+		return node;
+	}
+
+	/*
+	 * If after parsing an expression a `.` character
+	 * is found, it should be a member access expression.
+	 */
+	if (match(p, TOKEN_DOT)) {
+		if (!match_peek(p, TOKEN_IDENTIFIER)) {
+			error(p, "expected identifier after member access.");
+			return NULL;
+		}
+		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+		node->type = NODE_ACCESS;
+		node->expr.access.expr = left;
+		node->expr.access.member = p->tokens->lexeme;
+		node->expr.access.member_len = p->tokens->lexeme_len;
+		advance(p);
+
 		return node;
 	}
 

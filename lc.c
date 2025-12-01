@@ -72,6 +72,10 @@ void print_ast(ast_node *node, int depth) {
 			printf("Cast: %.*s\n", (int)node->expr.cast.type_len, node->expr.cast.type);
 			print_ast(node->expr.cast.value, depth + 1);
 			break;
+		case NODE_ACCESS:
+			printf("Access: %.*s\n", (int)node->expr.access.member_len, node->expr.access.member);
+			print_ast(node->expr.access.expr, depth + 1);
+			break;
 		case NODE_BINARY:
 			printf("BinaryOp (%s)\n", get_op_str(node->expr.binary.operator));
 			print_ast(node->expr.binary.left, depth + 1);
