@@ -73,8 +73,9 @@ void print_ast(ast_node *node, int depth) {
 			print_ast(node->expr.cast.value, depth + 1);
 			break;
 		case NODE_ACCESS:
-			printf("Access: %.*s\n", (int)node->expr.access.member_len, node->expr.access.member);
-			print_ast(node->expr.access.expr, depth + 1);
+			printf("Access:\n");
+				print_ast(node->expr.access.expr, depth + 1);
+				print_ast(node->expr.access.member, depth + 1);
 			break;
 		case NODE_LABEL:
 			printf("Label: %.*s\n", (int)node->expr.label.name_len, node->expr.label.name);
@@ -141,6 +142,10 @@ void print_ast(ast_node *node, int depth) {
 		case NODE_RETURN:
 			printf("Return:\n");
 			print_ast(node->expr.ret.value, depth + 1);
+			break;
+		case NODE_IMPORT:
+			printf("Import:\n");
+			print_ast(node->expr.import.path, depth + 1);
 			break;
 		default:
 			printf("Unknown Node Type: %d\n", node->type);

@@ -340,9 +340,7 @@ ast_node *parse_expression(parser *p)
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_ACCESS;
 		node->expr.access.expr = left;
-		node->expr.access.member = p->tokens->lexeme;
-		node->expr.access.member_len = p->tokens->lexeme_len;
-		advance(p);
+		node->expr.access.member = parse_expression(p);
 
 		return node;
 	}
@@ -425,6 +423,27 @@ static ast_node *parse_statement(parser *p)
 			error(p, "expected `;` after `goto`.");
 			return NULL;
 		}
+		return node;
+	} else if (match(p, TOKEN_IMPORT)) {
+		ast_node *expr = parse_expression(p);
+		if (!expr) {
+			error(p, "expected module path after `import`.");
+			return NULL;
+		}
+		if (expr->type != NODE_ACCESS && expr->type != NODE_IDENTIFIER) {
+			error(p, "expected module path after `import`.");
+			return NULL;
+		}
+
+		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+		node->type = NODE_IMPORT;
+		node->expr.import.path = expr;
+
+		if (!match(p, TOKEN_SEMICOLON)) {
+			error(p, "expected `;` after `import`.");
+			return NULL;
+		}
+
 		return node;
 	} else  {
 		ast_node *expr = parse_expression(p);

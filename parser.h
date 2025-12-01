@@ -77,7 +77,7 @@ typedef enum {
 	NODE_RETURN,
 	NODE_LABEL,
 	NODE_GOTO,
-	NODE_DO,
+	NODE_IMPORT,
 	NODE_FOR,
 	NODE_WHILE,
 	NODE_IF,
@@ -131,8 +131,7 @@ typedef struct _ast_node {
 		} subscript;
 		struct {
 			struct _ast_node *expr;
-			char *member;
-			usize member_len;
+			struct _ast_node *member;
 		} access;
 		struct {
 			struct _ast_node *expr;
@@ -148,6 +147,10 @@ typedef struct _ast_node {
 		struct {
 			struct _ast_node *value;
 		} ret;
+		struct {
+			/* This should be an access. */
+			struct _ast_node *path;
+		} import;
 	} expr;
 } ast_node;
 
