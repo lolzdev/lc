@@ -41,6 +41,7 @@ typedef enum {
 	TOKEN_COLON, // :
 	TOKEN_SEMICOLON, // ;
 	TOKEN_DOT, // .
+	TOKEN_DOUBLE_DOT, // ..
 	TOKEN_BANG, // !
 	TOKEN_COMMA, // ,
 	TOKEN_LPAREN, // (

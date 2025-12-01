@@ -373,6 +373,11 @@ ast_node *parse_expression(parser *p)
 	return left;
 }
 
+static ast_node *parse_for(parser *p)
+{
+	return NULL;
+}
+
 static ast_node *parse_statement(parser *p)
 {
 	if (match(p, TOKEN_BREAK)) {

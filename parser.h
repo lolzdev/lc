@@ -151,6 +151,11 @@ typedef struct _ast_node {
 			/* This should be an access. */
 			struct _ast_node *path;
 		} import;
+		struct {
+			struct _ast_node *parameters;
+			struct _ast_node *captures;
+			usize param_len;
+		} fr; // for
 	} expr;
 } ast_node;
 

@@ -262,8 +262,13 @@ static bool parse_special(lexer *l)
 		l->index += 1;
 		return true;
 	case '.':
-		add_token(l, TOKEN_DOT, 1);
-		l->index += 1;
+		if (l->source[l->index+1] == '.') {
+			add_token(l, TOKEN_DOUBLE_DOT, 2);
+			l->index += 2;
+		}  else {
+			add_token(l, TOKEN_DOT, 1);
+			l->index += 1;
+		}
 		return true;
 	case ',':
 		add_token(l, TOKEN_COMMA, 1);
