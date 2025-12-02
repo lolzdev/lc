@@ -88,11 +88,6 @@ void print_ast(ast_node *node, int depth) {
 			print_ast(node->expr.binary.left, depth + 1);
 			print_ast(node->expr.binary.right, depth + 1);
 			break;
-		case NODE_EQUAL:
-			printf("EqualOp (%s)\n", get_op_str(node->expr.binary.operator));
-			print_ast(node->expr.binary.left, depth + 1);
-			print_ast(node->expr.binary.right, depth + 1);
-			break;
 		case NODE_ARRAY_SUBSCRIPT:
 			printf("Array subscript\n");
 			print_ast(node->expr.subscript.expr, depth + 1);

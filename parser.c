@@ -488,7 +488,7 @@ ast_node *parse_expression(parser *p)
 		}
 		advance(p);
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
-		node->type = NODE_EQUAL;
+		node->type = NODE_BINARY;
 		node->expr.binary.left = left;
 		node->expr.binary.operator = op;
 		node->expr.binary.right = parse_expression(p);
