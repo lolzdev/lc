@@ -182,6 +182,24 @@ static ast_node *parse_factor(parser *p)
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_INTEGER;
 		node->expr.integer = parse_int(t->lexeme, t->lexeme_len);
+		if (match(p, TOKEN_DOUBLE_DOT)) {
+			ast_node *range = arena_alloc(p->allocator, sizeof(ast_node));
+			range->type = NODE_RANGE;
+			range->expr.binary.left = node;
+			range->expr.binary.operator = OP_PLUS;
+			snapshot snap = arena_snapshot(p->allocator);
+			ast_node *end = parse_factor(p);
+			if (!end) {
+				range->expr.binary.right = NULL;
+			} else if (end->type != NODE_INTEGER) {
+				arena_reset_to_snapshot(p->allocator, snap);
+				error(p, "expected integer.");
+				return NULL;
+			} else {
+				range->expr.binary.right = end;
+			}
+			return range;
+		}
 		return node;
 	}
 	else if (match(p, TOKEN_FLOAT))
@@ -510,77 +528,138 @@ static ast_node *parse_compound(parser *p)
 	return compound;
 }
 
-static ast_node *parse_double_dot(parser* p) {
-	ast_node* begin = parse_expression(p);
-	if (!begin || (begin->type != NODE_INTEGER && begin->type != NODE_BINARY && begin->type != NODE_UNARY)) {
-		error(p, "Invalid begin range operator.");
-		return NULL;
-	}
-	if (!match(p, TOKEN_DOUBLE_DOT)) {
-		error(p, "Expected `..`.");
-		return NULL;
-	}
-	ast_node* node = arena_alloc(p->allocator, sizeof(ast_node));
-	node->type = NODE_RANGE;
-	node->expr.binary.left = begin;
-	node->expr.binary.operator = OP_PLUS; // Always adding 1
-	if (p->tokens->type != TOKEN_INTEGER) {
-		return node;
-	}
-	ast_node* end = parse_expression(p);
-	if (!end || (end->type != NODE_INTEGER && end->type != NODE_BINARY && end->type != NODE_UNARY)) {
-		error(p, "Invalid end range operator.");
-		return NULL;
-	}
-	node->expr.binary.right = end;
-	return node;
-}
-
 static ast_node *parse_for(parser *p)
 {
 	advance(p);
 	ast_node* node = arena_alloc(p->allocator, sizeof(ast_node));
 	node->type = NODE_FOR;
-	ast_node* range = parse_double_dot(p);
-	node->expr.fr.range = range;
-	if (p->tokens->type != TOKEN_RPAREN) {
-		if (!match(p, TOKEN_COMMA)) {
-			error(p, "Expected `,` seperating for parameters\n");
+
+	snapshot arena_start = arena_snapshot(p->allocator);
+	node->expr.fr.slices = arena_alloc(p->allocator, sizeof(ast_node));
+	node->expr.fr.slices->type = NODE_UNIT;
+	node->expr.fr.slices->expr.unit_node.expr = parse_expression(p);
+	ast_node *tail = node->expr.fr.slices;
+	node->expr.fr.slice_len = 1;
+
+	/* In this case, there is only one slice. */
+	if (match(p, TOKEN_RPAREN))
+	{
+		goto parse_captures;
+	}
+
+	if (match(p, TOKEN_COMMA))
+	{
+		ast_node *expr = parse_expression(p);
+		if (expr)
+		{
+			while (!match(p, TOKEN_RPAREN))
+			{
+				if (!match(p, TOKEN_COMMA))
+				{
+					error(p, "expected `)`.");
+					arena_reset_to_snapshot(p->allocator, arena_start);
+					return NULL;
+				}
+				tail->expr.unit_node.next = arena_alloc(p->allocator, sizeof(ast_node));
+				tail->expr.unit_node.next->expr.unit_node.expr = expr;
+				tail = tail->expr.unit_node.next;
+				tail->type = NODE_UNIT;
+				expr = parse_expression(p);
+				if (!expr)
+				{
+					error(p, "expected `)`.");
+					arena_reset_to_snapshot(p->allocator, arena_start);
+					return NULL;
+				}
+				node->expr.fr.slice_len += 1;
+			}
+
+			tail->expr.unit_node.next = arena_alloc(p->allocator, sizeof(ast_node));
+			tail->expr.unit_node.next->expr.unit_node.expr = expr;
+			tail = tail->expr.unit_node.next;
+			tail->type = NODE_UNIT;
+		}
+		else
+		{
+			error(p, "expected expression.");
+			arena_reset_to_snapshot(p->allocator, arena_start);
 			return NULL;
 		}
-		ast_node* array = parse_expression(p);
-		node->expr.fr.array = array;
 	}
-	if (!match(p, TOKEN_RPAREN)) {
-		error(p, "Expected `)` to close for range\n");
+	else
+	{
+		error(p, "expected `)`.");
+		arena_reset_to_snapshot(p->allocator, arena_start);
 		return NULL;
 	}
-	if (p->tokens->type != TOKEN_PIPE) {
-		goto parseBody;
-	}
-	advance(p);
-	const char* rangeCapture = p->tokens->lexeme;
-	node->expr.fr.rangeCapture = rangeCapture;
-	node->expr.fr.rangeCaptureLen = p->tokens->lexeme_len;
-	if (!match(p, TOKEN_IDENTIFIER)) {
-		error(p, "Expected range capture to be an identifier\n");
-		return NULL;
-	}
-	if (p->tokens->type == TOKEN_COMMA) {
-		advance(p);
-		const char* arrayCapture = p->tokens->lexeme;
-		node->expr.fr.arrayCapture = arrayCapture;
-		node->expr.fr.arrayCaptureLen = p->tokens->lexeme_len;
-		if (!match(p, TOKEN_IDENTIFIER)) {
-			error(p, "Expected array capture to be an identifier\n");
-			return NULL;
-		}
-	}
+
+parse_captures:
+
 	if (!match(p, TOKEN_PIPE)) {
-		error(p, "Expected `|` to close captures\n");
+		error(p, "expected capture.");
 		return NULL;
 	}
-parseBody:;
+
+	arena_start = arena_snapshot(p->allocator);
+	node->expr.fr.captures = arena_alloc(p->allocator, sizeof(ast_node));
+	node->expr.fr.captures->type = NODE_UNIT;
+	node->expr.fr.captures->expr.unit_node.expr = parse_expression(p);
+	if (node->expr.fr.captures->expr.unit_node.expr && node->expr.fr.captures->expr.unit_node.expr->type != NODE_IDENTIFIER) {
+		error(p, "captures must be identifiers.");
+		arena_reset_to_snapshot(p->allocator, arena_start);
+		return NULL;
+	}
+	tail = node->expr.fr.captures;
+	node->expr.fr.capture_len = 1;
+
+	/* In this case, there is only one capture */
+	if (match(p, TOKEN_PIPE)) {
+		goto parse_body;
+	}
+
+	if (match(p, TOKEN_COMMA)) {
+		ast_node *expr = parse_expression(p);
+		if (expr) {
+			while (!match(p, TOKEN_PIPE)) {
+				if (!match(p, TOKEN_COMMA)) {
+					error(p, "expected `)`.");
+					arena_reset_to_snapshot(p->allocator, arena_start);
+					return NULL;
+				}
+				tail->expr.unit_node.next = arena_alloc(p->allocator, sizeof(ast_node));
+				tail->expr.unit_node.next->expr.unit_node.expr = expr;
+				tail = tail->expr.unit_node.next;
+				tail->type = NODE_UNIT;
+				expr = parse_expression(p);
+				if (!expr) {
+					error(p, "expected `|`.");
+					arena_reset_to_snapshot(p->allocator, arena_start);
+					return NULL;
+				}
+				node->expr.fr.capture_len += 1;
+			}
+
+			tail->expr.unit_node.next = arena_alloc(p->allocator, sizeof(ast_node));
+			tail->expr.unit_node.next->expr.unit_node.expr = expr;
+			tail = tail->expr.unit_node.next;
+			tail->type = NODE_UNIT;
+		} else {
+			error(p, "expected identifier.");
+			arena_reset_to_snapshot(p->allocator, arena_start);
+			return NULL;
+		}
+	} else {
+		error(p, "expected `|`.");
+		arena_reset_to_snapshot(p->allocator, arena_start);
+		return NULL;
+	}
+
+parse_body:;
+	if (node->expr.fr.capture_len != node->expr.fr.slice_len) {
+		error(p, "invalid number of captures.");
+		return NULL;
+	}
+
 	ast_node* body = parse_compound(p);
 	node->expr.fr.body = body;
 	return node;

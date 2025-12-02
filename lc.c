@@ -163,14 +163,9 @@ void print_ast(ast_node *node, int depth) {
 			break;
 		case NODE_FOR:
 			printf("For:\n");
-			print_ast(node->expr.fr.range, depth + 1);
-			print_ast(node->expr.fr.array, depth + 1);
+			print_ast(node->expr.fr.slices, depth + 1);
+			print_ast(node->expr.fr.captures, depth + 1);
 			print_indent(depth + 1);
-			printf("Range capture: %.*s\n", node->expr.fr.rangeCaptureLen, node->expr.fr.rangeCapture);
-			if (node->expr.fr.arrayCapture) {
-				print_indent(depth + 1);
-				printf("Array capture: %.*s\n", node->expr.fr.arrayCaptureLen, node->expr.fr.arrayCapture);
-			}
 			print_ast(node->expr.fr.body, depth + 1);
 			break;
 		case NODE_RANGE:

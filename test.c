@@ -1,17 +1,3 @@
-//import example.test.idk.idk;
-
-//hello:
-//goto test;
-//return 5;
-
-// loop(0..15) |i| {
-//     printf("%d\n", i);
-// }
-
-return 6;
-
-loop (0.., list) |i, v| {
+loop (0..1, list, 4..5, test, idk) |i, v, k, e, s| {
 	printf("%d\n", i);
 }
-
-return 7;

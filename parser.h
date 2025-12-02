@@ -156,12 +156,11 @@ typedef struct _ast_node {
 			struct _ast_node *path;
 		} import;
 		struct {
-			struct _ast_node *range;
-			struct _ast_node *array;
-			const char* rangeCapture;
-			const char* arrayCapture;
-			int rangeCaptureLen;
-			int arrayCaptureLen;
+			/* These should be lists of unit_node */
+			struct _ast_node *slices;
+			struct _ast_node *captures;
+			int capture_len;
+			int slice_len;
 			struct _ast_node* body;
 		} fr; // for
 		struct {
