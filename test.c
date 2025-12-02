@@ -1,3 +1,1 @@
-loop i != 0 {
-	printf("%d\n", i);
-}
+u32 a = 3;

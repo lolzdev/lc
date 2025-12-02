@@ -170,6 +170,13 @@ typedef struct _ast_node {
 			struct _ast_node **statements;
 			usize stmt_len;
 		} compound;
+		struct {
+			struct _ast_node *value;
+			char *name;
+			usize name_len;
+			char *type;
+			usize type_len;
+		} var_decl;
 	} expr;
 } ast_node;
 

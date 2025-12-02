@@ -138,7 +138,8 @@ void print_ast(ast_node *node, int depth) {
 			printf("IfStmt (Fields missing in struct)\n");
 			break;
 		case NODE_VAR_DECL:
-			printf("VarDecl (Fields missing in struct)\n");
+			printf("VarDecl: %.*s: %.*s\n", (int)node->expr.var_decl.name_len, node->expr.var_decl.name, (int)node->expr.var_decl.type_len, node->expr.var_decl.type);
+			print_ast(node->expr.var_decl.value, depth + 1);
 			break;
 		case NODE_FUNCTION:
 			printf("FunctionDef (Fields missing in struct)\n");

@@ -448,7 +448,7 @@ ast_node *parse_expression(parser *p)
 		return node;
 	}
 
-	if ((p->tokens->type >= TOKEN_DOUBLE_EQ && p->tokens->type <= TOKEN_NOT_EQ) || (p->tokens->type >= TOKEN_LSHIFT_EQ && p->tokens->type <= TOKEN_DOUBLE_AND))
+	if (p->tokens && ((p->tokens->type >= TOKEN_DOUBLE_EQ && p->tokens->type <= TOKEN_NOT_EQ) || (p->tokens->type >= TOKEN_LSHIFT_EQ && p->tokens->type <= TOKEN_DOUBLE_AND)))
 	{
 		binary_op op;
 		switch (p->tokens->type)
@@ -776,6 +776,31 @@ static ast_node *parse_statement(parser *p)
 		{
 			return parse_while(p);
 		}
+	}
+	else if (match_peek(p, TOKEN_IDENTIFIER) && p->tokens->next && p->tokens->next->type == TOKEN_IDENTIFIER)
+	{
+		/* Variable declaration. */
+		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+		node->type = NODE_VAR_DECL;
+		node->expr.var_decl.type = p->tokens->lexeme;
+		node->expr.var_decl.type_len = p->tokens->lexeme_len;
+		advance(p);
+		node->expr.var_decl.name = p->tokens->lexeme;
+		node->expr.var_decl.name_len = p->tokens->lexeme_len;
+		advance(p);
+		if (match(p, TOKEN_EQ)) {
+			node->expr.var_decl.value = parse_expression(p);
+		} else {
+			node->expr.var_decl.value = NULL;
+		}
+
+		if (!match(p, TOKEN_SEMICOLON))
+		{
+			error(p, "expected `;` after statement.");
+			return NULL;
+		}
+
+		return node;
 	}
 	else
 	{
