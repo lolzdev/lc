@@ -2,10 +2,12 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 bool has_errors = false;
 
 ast_node *parse_expression(parser *p);
+static ast_node *parse_statement(parser *p);
 
 /* Consume a token in the list. */
 static void advance(parser *p)
@@ -27,9 +29,12 @@ static token *peek(parser *p)
  */
 static bool match_peek(parser *p, token_type type)
 {
-	if (p->tokens) {
+	if (p->tokens)
+	{
 		return p->tokens->type == type;
-	} else {
+	}
+	else
+	{
 		return false;
 	}
 }
@@ -37,8 +42,10 @@ static bool match_peek(parser *p, token_type type)
 /* Same as `match_peek()` but it consumes the token. */
 static bool match(parser *p, token_type type)
 {
-	if (p->tokens) {
-		if (p->tokens->type == type) {
+	if (p->tokens)
+	{
+		if (p->tokens->type == type)
+		{
 			advance(p);
 			return true;
 		}
@@ -57,22 +64,25 @@ static void parser_sync(parser *p)
 {
 	advance(p);
 
-	while (p->tokens) {
-		if (p->previous->type == TOKEN_SEMICOLON || p->previous->type == TOKEN_RCURLY) {
+	while (p->tokens)
+	{
+		if (p->previous->type == TOKEN_SEMICOLON || p->previous->type == TOKEN_RCURLY)
+		{
 			return;
 		}
 
-		switch (p->tokens->type) {
-			case TOKEN_STRUCT:
-			case TOKEN_ENUM:
-			case TOKEN_IF:
-			case TOKEN_LOOP:
-			case TOKEN_DO:
-			case TOKEN_RETURN:
-			case TOKEN_SWITCH:
-				return;
-			default:
-				advance(p);
+		switch (p->tokens->type)
+		{
+		case TOKEN_STRUCT:
+		case TOKEN_ENUM:
+		case TOKEN_IF:
+		case TOKEN_LOOP:
+		case TOKEN_DO:
+		case TOKEN_RETURN:
+		case TOKEN_SWITCH:
+			return;
+		default:
+			advance(p);
 		}
 	}
 }
@@ -85,7 +95,6 @@ static void error(parser *p, char *msg)
 	parser_sync(p);
 }
 
-
 static ast_node *parse_call(parser *p)
 {
 	ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
@@ -96,11 +105,12 @@ static ast_node *parse_call(parser *p)
 	/* Skip also the opening `(` */
 	advance(p);
 	/* Call without parameters */
-	if (match(p, TOKEN_RPAREN)) {
+	if (match(p, TOKEN_RPAREN))
+	{
 		node->expr.call.parameters = NULL;
 		return node;
 	}
-	
+
 	snapshot arena_start = arena_snapshot(p->allocator);
 	node->expr.call.parameters = arena_alloc(p->allocator, sizeof(ast_node));
 	node->expr.call.parameters->type = NODE_UNIT;
@@ -109,15 +119,20 @@ static ast_node *parse_call(parser *p)
 	node->expr.call.param_len = 1;
 
 	/* In this case, there is only one parameter */
-	if (match(p, TOKEN_RPAREN)) {
+	if (match(p, TOKEN_RPAREN))
+	{
 		return node;
 	}
 
-	if (match(p, TOKEN_COMMA)) {
+	if (match(p, TOKEN_COMMA))
+	{
 		ast_node *expr = parse_expression(p);
-		if (expr) {
-			while (!match(p, TOKEN_RPAREN)) {
-				if (!match(p, TOKEN_COMMA)) {
+		if (expr)
+		{
+			while (!match(p, TOKEN_RPAREN))
+			{
+				if (!match(p, TOKEN_COMMA))
+				{
 					error(p, "expected `)`.");
 					arena_reset_to_snapshot(p->allocator, arena_start);
 					return NULL;
@@ -127,7 +142,8 @@ static ast_node *parse_call(parser *p)
 				tail = tail->expr.unit_node.next;
 				tail->type = NODE_UNIT;
 				expr = parse_expression(p);
-				if (!expr) {
+				if (!expr)
+				{
 					error(p, "expected `)`.");
 					arena_reset_to_snapshot(p->allocator, arena_start);
 					return NULL;
@@ -139,12 +155,16 @@ static ast_node *parse_call(parser *p)
 			tail->expr.unit_node.next->expr.unit_node.expr = expr;
 			tail = tail->expr.unit_node.next;
 			tail->type = NODE_UNIT;
-		} else {
+		}
+		else
+		{
 			error(p, "expected expression.");
 			arena_reset_to_snapshot(p->allocator, arena_start);
 			return NULL;
 		}
-	} else {
+	}
+	else
+	{
 		error(p, "expected `)`.");
 		arena_reset_to_snapshot(p->allocator, arena_start);
 		return NULL;
@@ -157,19 +177,25 @@ static ast_node *parse_call(parser *p)
 static ast_node *parse_factor(parser *p)
 {
 	token *t = peek(p);
-	if (match(p, TOKEN_INTEGER)) {
+	if (match(p, TOKEN_INTEGER))
+	{
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_INTEGER;
 		node->expr.integer = parse_int(t->lexeme, t->lexeme_len);
 		return node;
-	} else if (match(p, TOKEN_FLOAT)) {
+	}
+	else if (match(p, TOKEN_FLOAT))
+	{
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_FLOAT;
 		node->expr.flt = parse_float(t->lexeme, t->lexeme_len);
 		return node;
-	} else if (match_peek(p, TOKEN_IDENTIFIER)) {
+	}
+	else if (match_peek(p, TOKEN_IDENTIFIER))
+	{
 		/* If a `(` is found after an identifier, it should be a call. */
-		if (p->tokens->next && p->tokens->next->type == TOKEN_LPAREN) {
+		if (p->tokens->next && p->tokens->next->type == TOKEN_LPAREN)
+		{
 			return parse_call(p);
 		}
 		advance(p);
@@ -179,36 +205,59 @@ static ast_node *parse_factor(parser *p)
 		node->expr.string.start = t->lexeme;
 		node->expr.string.len = t->lexeme_len;
 		return node;
-	} else if (match(p, TOKEN_STRING)) {
+	}
+	else if (match(p, TOKEN_STRING))
+	{
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_STRING;
 		node->expr.string.start = t->lexeme;
 		node->expr.string.len = t->lexeme_len;
 		return node;
-	} else if (match(p, TOKEN_CHAR)) {
+	}
+	else if (match(p, TOKEN_CHAR))
+	{
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_CHAR;
-		if (t->lexeme_len == 2) {
+		if (t->lexeme_len == 2)
+		{
 			char c;
-			switch (t->lexeme[1]) {
-				case 'n': c = '\n'; break;
-				case 't': c = '\t'; break;
-				case 'r': c = '\r'; break;
-				case '0': c = '\0'; break;
-				case '\\': c = '\\'; break;
-				case '\'': c = '\''; break;
-				default:
-					error(p, "invalid escape code.");
-					return NULL;
+			switch (t->lexeme[1])
+			{
+			case 'n':
+				c = '\n';
+				break;
+			case 't':
+				c = '\t';
+				break;
+			case 'r':
+				c = '\r';
+				break;
+			case '0':
+				c = '\0';
+				break;
+			case '\\':
+				c = '\\';
+				break;
+			case '\'':
+				c = '\'';
+				break;
+			default:
+				error(p, "invalid escape code.");
+				return NULL;
 			}
 			node->expr.ch = c;
-		} else {
+		}
+		else
+		{
 			node->expr.ch = *(t->lexeme);
 		}
 		return node;
-	} else if (match(p, TOKEN_LPAREN)) {
+	}
+	else if (match(p, TOKEN_LPAREN))
+	{
 		ast_node *node = parse_expression(p);
-		if (!match(p, TOKEN_RPAREN)) {
+		if (!match(p, TOKEN_RPAREN))
+		{
 			error(p, "unclosed parenthesis");
 			return NULL;
 		}
@@ -221,29 +270,31 @@ static ast_node *parse_factor(parser *p)
 
 ast_node *parse_unary(parser *p)
 {
-	if (match(p, TOKEN_PLUS_PLUS) || match(p, TOKEN_MINUS) || match(p, TOKEN_MINUS_MINUS) || match(p, TOKEN_STAR) || match(p, TOKEN_AND) || match(p, TOKEN_BANG)) {
+	if (match(p, TOKEN_PLUS_PLUS) || match(p, TOKEN_MINUS) || match(p, TOKEN_MINUS_MINUS) || match(p, TOKEN_STAR) || match(p, TOKEN_AND) || match(p, TOKEN_BANG))
+	{
 		unary_op op;
-		switch (p->previous->type) {
-			case TOKEN_PLUS_PLUS:
-				op = UOP_INCR;
-				break;
-			case TOKEN_MINUS:
-				op = UOP_MINUS;
-				break;
-			case TOKEN_MINUS_MINUS:
-				op = UOP_DECR;
-				break;
-			case TOKEN_STAR:
-				op = UOP_DEREF;
-				break;
-			case TOKEN_AND:
-				op = UOP_REF;
-				break;
-			case TOKEN_BANG:
-				op = UOP_NOT;
-				break;
-			default:
-				goto end;
+		switch (p->previous->type)
+		{
+		case TOKEN_PLUS_PLUS:
+			op = UOP_INCR;
+			break;
+		case TOKEN_MINUS:
+			op = UOP_MINUS;
+			break;
+		case TOKEN_MINUS_MINUS:
+			op = UOP_DECR;
+			break;
+		case TOKEN_STAR:
+			op = UOP_DEREF;
+			break;
+		case TOKEN_AND:
+			op = UOP_REF;
+			break;
+		case TOKEN_BANG:
+			op = UOP_NOT;
+			break;
+		default:
+			goto end;
 		}
 
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
@@ -255,7 +306,8 @@ ast_node *parse_unary(parser *p)
 	}
 
 	/* Type cast. */
-	if (match_peek(p, TOKEN_LPAREN) && p->tokens->next && p->tokens->next->type == TOKEN_IDENTIFIER && p->tokens->next->next && p->tokens->next->next->type == TOKEN_RPAREN) {
+	if (match_peek(p, TOKEN_LPAREN) && p->tokens->next && p->tokens->next->type == TOKEN_IDENTIFIER && p->tokens->next->next && p->tokens->next->next->type == TOKEN_RPAREN)
+	{
 		advance(p);
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_CAST;
@@ -275,7 +327,8 @@ ast_node *parse_term(parser *p)
 {
 	ast_node *left = parse_unary(p);
 
-	while (match_peek(p, TOKEN_STAR) || match_peek(p, TOKEN_SLASH)) {
+	while (match_peek(p, TOKEN_STAR) || match_peek(p, TOKEN_SLASH))
+	{
 		binary_op op = peek(p)->type == TOKEN_STAR ? OP_MUL : OP_DIV;
 		advance(p);
 		ast_node *right = parse_factor(p);
@@ -298,7 +351,8 @@ ast_node *parse_expression(parser *p)
 {
 	ast_node *left = parse_term(p);
 
-	while (match_peek(p, TOKEN_PLUS) || match_peek(p, TOKEN_MINUS)) {
+	while (match_peek(p, TOKEN_PLUS) || match_peek(p, TOKEN_MINUS))
+	{
 		binary_op op = peek(p)->type == TOKEN_PLUS ? OP_PLUS : OP_MINUS;
 		advance(p);
 		ast_node *right = parse_term(p);
@@ -314,14 +368,16 @@ ast_node *parse_expression(parser *p)
 	 * If after parsing an expression a `[` character
 	 * is found, it should be an array subscript expression.
 	 */
-	if (match(p, TOKEN_LSQUARE)) {
+	if (match(p, TOKEN_LSQUARE))
+	{
 		ast_node *index = parse_expression(p);
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_ARRAY_SUBSCRIPT;
 		node->expr.subscript.expr = left;
 		node->expr.subscript.index = index;
 
-		if (!match(p, TOKEN_RSQUARE)) {
+		if (!match(p, TOKEN_RSQUARE))
+		{
 			error(p, "expected `]`.");
 			return NULL;
 		}
@@ -332,8 +388,10 @@ ast_node *parse_expression(parser *p)
 	 * If after parsing an expression a `.` character
 	 * is found, it should be a member access expression.
 	 */
-	if (match(p, TOKEN_DOT)) {
-		if (!match_peek(p, TOKEN_IDENTIFIER)) {
+	if (match(p, TOKEN_DOT))
+	{
+		if (!match_peek(p, TOKEN_IDENTIFIER))
+		{
 			error(p, "expected identifier after member access.");
 			return NULL;
 		}
@@ -346,20 +404,22 @@ ast_node *parse_expression(parser *p)
 	}
 
 	/*
-	 * If after parsing an expression a `++` or a `--` 
+	 * If after parsing an expression a `++` or a `--`
 	 * token is found, it should be a postfix expression.
 	 */
-	if (match(p, TOKEN_PLUS_PLUS) | match(p, TOKEN_MINUS_MINUS)) {
+	if (match(p, TOKEN_PLUS_PLUS) || match(p, TOKEN_MINUS_MINUS))
+	{
 		unary_op op;
-		switch (p->previous->type) {
-			case TOKEN_PLUS_PLUS:
-				op = UOP_INCR;
-				break;
-			case TOKEN_MINUS_MINUS:
-				op = UOP_DECR;
-				break;
-			default:
-				break;	
+		switch (p->previous->type)
+		{
+		case TOKEN_PLUS_PLUS:
+			op = UOP_INCR;
+			break;
+		case TOKEN_MINUS_MINUS:
+			op = UOP_DECR;
+			break;
+		default:
+			break;
 		}
 
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
@@ -370,41 +430,208 @@ ast_node *parse_expression(parser *p)
 		return node;
 	}
 
+	if ((p->tokens->type >= TOKEN_DOUBLE_EQ && p->tokens->type <= TOKEN_NOT_EQ) || (p->tokens->type >= TOKEN_LSHIFT_EQ && p->tokens->type <= TOKEN_DOUBLE_AND))
+	{
+		binary_op op;
+		switch (p->tokens->type)
+		{
+		case TOKEN_DOUBLE_EQ:
+			op = OP_EQ;
+			break;
+		case TOKEN_LESS_THAN:
+			op = OP_LT;
+			break;
+		case TOKEN_GREATER_THAN:
+			op = OP_GT;
+			break;
+		case TOKEN_LESS_EQ:
+			op = OP_LE;
+			break;
+		case TOKEN_GREATER_EQ:
+			op = OP_GE;
+			break;
+		case TOKEN_NOT_EQ:
+			op = OP_NEQ;
+			break;
+		case TOKEN_LSHIFT_EQ:
+			op = OP_LSHIFT_EQ;
+			break;
+		case TOKEN_RSHIFT_EQ:
+			op = OP_RSHIFT_EQ;
+			break;
+		case TOKEN_OR:
+			op = OP_OR;
+			break;
+		case TOKEN_DOUBLE_AND:
+			op = OP_AND;
+			break;
+		default:
+			break;
+		}
+		advance(p);
+		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+		node->type = NODE_EQUAL;
+		node->expr.binary.left = left;
+		node->expr.binary.operator = op;
+		node->expr.binary.right = parse_expression(p);
+
+		return node;
+	}
+
 	return left;
+}
+
+static ast_node *parse_compound(parser *p)
+{
+	if (!match(p, TOKEN_LCURLY))
+	{
+		error(p, "expected `{` for beginning of a block.");
+		return NULL;
+	}
+	ast_node *compound = arena_alloc(p->allocator, sizeof(ast_node));
+	compound->type = NODE_UNIT;
+	compound->expr.unit_node.expr = NULL;
+    compound->expr.unit_node.next = NULL;
+	ast_node* tail = compound;
+	// FIXME: This only works with correct blocks, incorrect blocks segfault
+	while (p->tokens->type != TOKEN_RCURLY &&
+           p->tokens->type != TOKEN_END)
+	{
+		ast_node* stmt = parse_statement(p);
+		tail->expr.unit_node.next = arena_alloc(p->allocator, sizeof(ast_node));
+		tail->expr.unit_node.next->expr.unit_node.expr = stmt;
+		tail = tail->expr.unit_node.next;
+		tail->type = NODE_UNIT;
+	}
+	if (p->tokens->type != TOKEN_RCURLY) {
+		error(p, "Unterminated block.");
+		return NULL;
+	}
+	return compound;
+}
+
+static ast_node *parse_double_dot(parser* p) {
+	ast_node* begin = parse_expression(p);
+	if (!begin || (begin->type != NODE_INTEGER && begin->type != NODE_BINARY && begin->type != NODE_UNARY)) {
+		error(p, "Invalid begin range operator.");
+		return NULL;
+	}
+	if (!match(p, TOKEN_DOUBLE_DOT)) {
+		error(p, "Expected `..`.");
+		return NULL;
+	}
+	ast_node* node = arena_alloc(p->allocator, sizeof(ast_node));
+	node->type = NODE_RANGE;
+	node->expr.binary.left = begin;
+	node->expr.binary.operator = OP_PLUS; // Always adding 1
+	if (p->tokens->type != TOKEN_INTEGER) {
+		return node;
+	}
+	ast_node* end = parse_expression(p);
+	if (!end || (end->type != NODE_INTEGER && end->type != NODE_BINARY && end->type != NODE_UNARY)) {
+		error(p, "Invalid end range operator.");
+		return NULL;
+	}
+	node->expr.binary.right = end;
+	return node;
 }
 
 static ast_node *parse_for(parser *p)
 {
-	return NULL;
+	advance(p);
+	ast_node* node = arena_alloc(p->allocator, sizeof(ast_node));
+	node->type = NODE_FOR;
+	ast_node* range = parse_double_dot(p);
+	node->expr.fr.range = range;
+	if (p->tokens->type != TOKEN_RPAREN) {
+		if (!match(p, TOKEN_COMMA)) {
+			error(p, "Expected `,` seperating for parameters\n");
+			return NULL;
+		}
+		ast_node* array = parse_expression(p);
+		node->expr.fr.array = array;
+	}
+	if (!match(p, TOKEN_RPAREN)) {
+		error(p, "Expected `)` to close for range\n");
+		return NULL;
+	}
+	if (p->tokens->type != TOKEN_PIPE) {
+		goto parseBody;
+	}
+	advance(p);
+	const char* rangeCapture = p->tokens->lexeme;
+	node->expr.fr.rangeCapture = rangeCapture;
+	node->expr.fr.rangeCaptureLen = p->tokens->lexeme_len;
+	if (!match(p, TOKEN_IDENTIFIER)) {
+		error(p, "Expected range capture to be an identifier\n");
+		return NULL;
+	}
+	if (p->tokens->type == TOKEN_COMMA) {
+		advance(p);
+		const char* arrayCapture = p->tokens->lexeme;
+		node->expr.fr.arrayCapture = arrayCapture;
+		node->expr.fr.arrayCaptureLen = p->tokens->lexeme_len;
+		if (!match(p, TOKEN_IDENTIFIER)) {
+			error(p, "Expected array capture to be an identifier\n");
+			return NULL;
+		}
+	}
+	if (!match(p, TOKEN_PIPE)) {
+		error(p, "Expected `|` to close captures\n");
+		return NULL;
+	}
+parseBody:;
+	ast_node* body = parse_compound(p);
+	node->expr.fr.body = body;
+	return node;
+}
+
+static ast_node *parse_while(parser *p)
+{
+	ast_node *condition = parse_expression(p);
+	ast_node *body = parse_compound(p);
+	ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+	node->type = NODE_WHILE;
+	node->expr.whle.body = body;
+	node->expr.whle.condition = condition;
+	return node;
 }
 
 static ast_node *parse_statement(parser *p)
 {
-	if (match(p, TOKEN_BREAK)) {
-		if (!match(p, TOKEN_SEMICOLON)) {
+	if (match(p, TOKEN_BREAK))
+	{
+		if (!match(p, TOKEN_SEMICOLON))
+		{
 			error(p, "expected `;` after `break`.");
 			return NULL;
 		}
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_BREAK;
 		return node;
-	} else if (match(p, TOKEN_RETURN)) {
+	}
+	else if (match(p, TOKEN_RETURN))
+	{
 		ast_node *expr = parse_expression(p);
 
-		if (!expr) {
+		if (!expr)
+		{
 			error(p, "expected expression after `return`.");
 			return NULL;
 		}
-		if (!match(p, TOKEN_SEMICOLON)) {
+		if (!match(p, TOKEN_SEMICOLON))
+		{
 			error(p, "expected `;`.");
 			return NULL;
 		}
-		
+
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_RETURN;
 		node->expr.ret.value = expr;
 		return node;
-	} else if (match_peek(p, TOKEN_IDENTIFIER) && p->tokens->next && p->tokens->next->type == TOKEN_COLON) {
+	}
+	else if (match_peek(p, TOKEN_IDENTIFIER) && p->tokens->next && p->tokens->next->type == TOKEN_COLON)
+	{
 		/* In this case, this is a label. */
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_LABEL;
@@ -414,8 +641,11 @@ static ast_node *parse_statement(parser *p)
 		/* Consume `:` */
 		advance(p);
 		return node;
-	} else if (match(p, TOKEN_GOTO)) {
-		if (!match_peek(p, TOKEN_IDENTIFIER)) {
+	}
+	else if (match(p, TOKEN_GOTO))
+	{
+		if (!match_peek(p, TOKEN_IDENTIFIER))
+		{
 			error(p, "expected label identifier after `goto`.");
 			return NULL;
 		}
@@ -424,18 +654,23 @@ static ast_node *parse_statement(parser *p)
 		node->expr.label.name = p->tokens->lexeme;
 		node->expr.label.name_len = p->tokens->lexeme_len;
 		advance(p);
-		if (!match(p, TOKEN_SEMICOLON)) {
+		if (!match(p, TOKEN_SEMICOLON))
+		{
 			error(p, "expected `;` after `goto`.");
 			return NULL;
 		}
 		return node;
-	} else if (match(p, TOKEN_IMPORT)) {
+	}
+	else if (match(p, TOKEN_IMPORT))
+	{
 		ast_node *expr = parse_expression(p);
-		if (!expr) {
+		if (!expr)
+		{
 			error(p, "expected module path after `import`.");
 			return NULL;
 		}
-		if (expr->type != NODE_ACCESS && expr->type != NODE_IDENTIFIER) {
+		if (expr->type != NODE_ACCESS && expr->type != NODE_IDENTIFIER)
+		{
 			error(p, "expected module path after `import`.");
 			return NULL;
 		}
@@ -444,23 +679,39 @@ static ast_node *parse_statement(parser *p)
 		node->type = NODE_IMPORT;
 		node->expr.import.path = expr;
 
-		if (!match(p, TOKEN_SEMICOLON)) {
+		if (!match(p, TOKEN_SEMICOLON))
+		{
 			error(p, "expected `;` after `import`.");
 			return NULL;
 		}
 
 		return node;
-	} else  {
+	}
+	else if (match(p, TOKEN_LOOP))
+	{
+		if (p->tokens->type == TOKEN_LPAREN)
+		{
+			return parse_for(p);
+		}
+		else
+		{
+			return parse_while(p);
+		}
+	}
+	else
+	{
 		ast_node *expr = parse_expression(p);
-		if (!expr) {
+		if (!expr)
+		{
 			return NULL;
 		}
-		if (!match(p, TOKEN_SEMICOLON)) {
+		if (!match(p, TOKEN_SEMICOLON))
+		{
 			error(p, "expected `;` after expression.");
 			return NULL;
 		}
 		return expr;
-	} 
+	}
 }
 
 /* Get a list of expressions to form a full AST. */

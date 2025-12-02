@@ -18,6 +18,8 @@ typedef enum {
 	OP_LT, // <
 	OP_GE, // >=
 	OP_LE, // <=
+	OP_RSHIFT_EQ, // >>=
+	OP_LSHIFT_EQ, // <<=
 	OP_BOR, // |
 	OP_BAND, // &
 	OP_BXOR, // ^
@@ -69,6 +71,8 @@ typedef enum {
 	NODE_CAST,
 	NODE_UNARY,
 	NODE_BINARY,
+	NODE_EQUAL,
+	NODE_RANGE,
 	NODE_ARRAY_SUBSCRIPT,
 	NODE_ACCESS,
 	NODE_CALL,
@@ -152,10 +156,22 @@ typedef struct _ast_node {
 			struct _ast_node *path;
 		} import;
 		struct {
-			struct _ast_node *parameters;
-			struct _ast_node *captures;
-			usize param_len;
+			struct _ast_node *range;
+			struct _ast_node *array;
+			const char* rangeCapture;
+			const char* arrayCapture;
+			int rangeCaptureLen;
+			int arrayCaptureLen;
+			struct _ast_node* body;
 		} fr; // for
+		struct {
+			struct _ast_node *condition;
+			struct _ast_node *body;
+		} whle; // while
+		struct {
+			struct _ast_node **statements;
+			usize stmt_len;
+		} compound;
 	} expr;
 } ast_node;
 

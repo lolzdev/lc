@@ -88,6 +88,11 @@ void print_ast(ast_node *node, int depth) {
 			print_ast(node->expr.binary.left, depth + 1);
 			print_ast(node->expr.binary.right, depth + 1);
 			break;
+		case NODE_EQUAL:
+			printf("EqualOp (%s)\n", get_op_str(node->expr.binary.operator));
+			print_ast(node->expr.binary.left, depth + 1);
+			print_ast(node->expr.binary.right, depth + 1);
+			break;
 		case NODE_ARRAY_SUBSCRIPT:
 			printf("Array subscript\n");
 			print_ast(node->expr.subscript.expr, depth + 1);
@@ -114,15 +119,19 @@ void print_ast(ast_node *node, int depth) {
 			print_ast(node->expr.ternary.otherwise, depth + 2);
 			break;
 		case NODE_UNIT:
-		case NODE_COMPOUND: 
-			printf("Unit/Block:\n");
+			printf("Unit\n");
 			ast_node *current = node;
-			while (current && (current->type == NODE_UNIT || current->type == NODE_COMPOUND)) {
+			while (current && current->type == NODE_UNIT) {
 				print_ast(current->expr.unit_node.expr, depth + 1);
 				current = current->expr.unit_node.next;
 			}
 			break;
-		case NODE_CALL: 
+		case NODE_COMPOUND: 
+			printf("Block\n");
+			for (usize i = 0; i < node->expr.compound.stmt_len; ++i) {
+				print_ast(node->expr.compound.statements[i], depth + 1);
+			}
+		case NODE_CALL:
 			printf("Call: %.*s\n", (int)node->expr.call.name_len, node->expr.call.name);
 			current = node->expr.call.parameters;
 			while (current && current->type == NODE_UNIT) {
@@ -146,6 +155,28 @@ void print_ast(ast_node *node, int depth) {
 		case NODE_IMPORT:
 			printf("Import:\n");
 			print_ast(node->expr.import.path, depth + 1);
+			break;
+		case NODE_WHILE:
+			printf("While:\n");
+			print_ast(node->expr.whle.condition, depth + 1);
+			print_ast(node->expr.whle.body, depth + 1);
+			break;
+		case NODE_FOR:
+			printf("For:\n");
+			print_ast(node->expr.fr.range, depth + 1);
+			print_ast(node->expr.fr.array, depth + 1);
+			print_indent(depth + 1);
+			printf("Range capture: %.*s\n", node->expr.fr.rangeCaptureLen, node->expr.fr.rangeCapture);
+			if (node->expr.fr.arrayCapture) {
+				print_indent(depth + 1);
+				printf("Array capture: %.*s\n", node->expr.fr.arrayCaptureLen, node->expr.fr.arrayCapture);
+			}
+			print_ast(node->expr.fr.body, depth + 1);
+			break;
+		case NODE_RANGE:
+			printf("Range:\n");
+			print_ast(node->expr.binary.left, depth + 1);
+			print_ast(node->expr.binary.right, depth + 1);
 			break;
 		default:
 			printf("Unknown Node Type: %d\n", node->type);
