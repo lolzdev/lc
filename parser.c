@@ -676,6 +676,17 @@ static ast_node *parse_while(parser *p)
 	return node;
 }
 
+static ast_node *parse_if(parser *p)
+{
+	ast_node *condition = parse_expression(p);
+	ast_node *body = parse_compound(p);
+	ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+	node->type = NODE_IF;
+	node->expr.whle.body = body;
+	node->expr.whle.condition = condition;
+	return node;
+}
+
 static ast_node *parse_struct(parser *p);
 static member *parse_member(parser *p)
 {
@@ -873,6 +884,9 @@ static ast_node *parse_statement(parser *p)
 		{
 			return parse_while(p);
 		}
+	}
+	else if (match(p, TOKEN_IF)) {
+		return parse_if(p);
 	}
 	else if (match_peek(p, TOKEN_IDENTIFIER) && p->tokens->next && p->tokens->next->type == TOKEN_IDENTIFIER)
 	{
