@@ -220,7 +220,7 @@ void print_ast(ast_node *node, int depth) {
 
 int main(void)
 {
-	FILE *fp = fopen("examples/for.l", "r");
+	FILE *fp = fopen("examples/hello_world.l", "r");
 	usize size = 0;
 	fseek(fp, 0, SEEK_END);
 	size = ftell(fp);

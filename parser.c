@@ -76,9 +76,9 @@ static void parser_sync(parser *p)
 		{
 		case TOKEN_STRUCT:
 		case TOKEN_ENUM:
+		case TOKEN_UNION:
 		case TOKEN_IF:
 		case TOKEN_LOOP:
-		case TOKEN_DO:
 		case TOKEN_RETURN:
 		case TOKEN_SWITCH:
 			return;
@@ -764,7 +764,6 @@ parse_captures:
 	}
 
 parse_body:;
-	printf("%d %d\n", node->expr.fr.capture_len, node->expr.fr.slice_len);
 	if (node->expr.fr.capture_len != node->expr.fr.slice_len) {
 		error(p, "invalid number of captures.");
 		return NULL;
@@ -777,13 +776,39 @@ parse_body:;
 
 static ast_node *parse_while(parser *p)
 {
+	u8 flags = 0x0;
+
+	if (match(p, TOKEN_WHILE)) {
+		flags |= LOOP_WHILE;
+	} else if (match(p, TOKEN_UNTIL)) {
+		flags |= LOOP_UNTIL;
+	} else if (!match_peek(p, TOKEN_LCURLY)) {
+		error(p, "expected `while`, `until` or `{`.");
+		return NULL;
+	}
 	ast_node *condition = parse_expression(p);
-	//printf("%d %d\n", p->tokens->type, TOKEN_RCURLY);
+	if (!condition) {
+		flags |= LOOP_AFTER;
+	}
 	ast_node *body = parse_compound(p);
 	ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 	node->type = NODE_WHILE;
 	node->expr.whle.body = body;
+
+	if (flags & LOOP_AFTER) {
+		if (match(p, TOKEN_WHILE)) {
+			flags |= LOOP_WHILE;
+			condition = parse_expression(p);
+		} else if (match(p, TOKEN_UNTIL)) {
+			flags |= LOOP_UNTIL;
+			condition = parse_expression(p);
+		} else {
+			node->expr.whle.condition = NULL;
+		}
+	}
+	
 	node->expr.whle.condition = condition;
+
 	return node;
 }
 

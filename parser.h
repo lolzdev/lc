@@ -110,6 +110,10 @@ typedef enum {
 #define PTR_RAW 0x1
 #define PTR_ARRAY 0x2
 
+#define LOOP_WHILE 0x1
+#define LOOP_UNTIL 0x2
+#define LOOP_AFTER 0x4
+
 typedef struct _ast_node {
 	node_type type;
 	union {
@@ -183,6 +187,7 @@ typedef struct _ast_node {
 		struct {
 			struct _ast_node *condition;
 			struct _ast_node *body;
+			u8 flags;
 		} whle; // while
 		struct {
 			struct _ast_node **statements;
