@@ -130,7 +130,7 @@ typedef struct _ast_node {
 			struct _ast_node *right;
 			unary_op operator;
 		} unary;
-		u64 integer;
+		i64 integer;
 		f64 flt; // float
 		struct {
 			char *start;

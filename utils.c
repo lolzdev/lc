@@ -2,12 +2,24 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
 
-u64 parse_int(char *s, usize len)
+i64 parse_int(char *s, usize len)
 {
+	bool negative = false;
+	if (*s == '-') {
+		s += 1;
+		len -= 1;
+		negative = true;
+	}
+
 	u64 int_part = 0;
 	for (usize i=0; i < len; i++) {
 		int_part = (int_part * 10) + (s[i] - '0');
+	}
+
+	if (negative) {
+		int_part *= -1;
 	}
 
 	return int_part;
@@ -15,22 +27,42 @@ u64 parse_int(char *s, usize len)
 
 f64 parse_float(char *s, usize len)
 {
-	f64 decimal_part = (f64)parse_int(s, len);
-	usize point_pos = 0;
+	bool negative = false;
+	if (*s == '-') {
+		s += 1;
+		len -= 1;
+		negative = true;
+	}
 
+	usize point_pos = 0;
 	for (usize i=0; i < len; i++) {
 		if (s[i] == '.') {
 			point_pos = i;
 			break;
 		}
 	}
+
+	i64 int_part = parse_int(s, point_pos);
+	i64 dec_part = parse_int(s+point_pos+1, len-point_pos-1);
+	for (usize i=0; i < len-point_pos-1; i++) {
+		int_part *= 10;
+	}
+
+	int_part += dec_part;
+
+	f64 f = (f64) int_part;
+
 	point_pos += 1;
 
 	for (usize i=0; i < len - point_pos; i++) {
-		decimal_part /= 10.0;
+		f /= 10.0;
 	}
 
-	return decimal_part;
+	if (negative) {
+		f *= -1;
+	}
+
+	return f;
 }
 
 
