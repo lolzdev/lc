@@ -134,6 +134,14 @@ void print_ast(ast_node *node, int depth) {
 				current = current->expr.unit_node.next;
 			}
 			break;
+		case NODE_STRUCT:
+			printf("Struct: %.*s\n", (int)node->expr.structure.name_len, node->expr.structure.name);
+			member *m = node->expr.structure.members;
+			while (m) {
+				print_ast(m->type, depth + 1);
+				m = m->next;
+			}
+			break;
 		case NODE_IF:
 			printf("IfStmt (Fields missing in struct)\n");
 			break;

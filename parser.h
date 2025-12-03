@@ -4,6 +4,8 @@
 #include "lexer.h"
 #include "utils.h"
 
+struct _ast_node;
+
 typedef enum {
 	OP_PLUS, // +
 	OP_MINUS, // -
@@ -49,11 +51,11 @@ typedef enum {
 	LAYOUT_EXTERN
 } struct_layout;
 
-typedef struct {
-	char *type_name;
-	usize type_len;
+typedef struct _member {
+	struct _ast_node *type;
 	char *name;
 	usize name_len;
+	struct _member *next;
 } member;
 
 typedef struct {
@@ -177,6 +179,11 @@ typedef struct _ast_node {
 			char *type;
 			usize type_len;
 		} var_decl;
+		struct {
+			member *members;
+			char *name;
+			usize name_len;
+		} structure;
 	} expr;
 } ast_node;
 

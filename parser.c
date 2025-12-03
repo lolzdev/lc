@@ -676,6 +676,99 @@ static ast_node *parse_while(parser *p)
 	return node;
 }
 
+static ast_node *parse_struct(parser *p);
+static member *parse_member(parser *p)
+{
+	ast_node *type = NULL;
+	
+	if (match(p, TOKEN_STRUCT)) {
+		type = parse_struct(p);
+	}
+	if (!type) {
+		type = parse_factor(p);
+		if (!type) {
+			error(p, "expected struct definition or identifier.");
+			return NULL;
+		}
+		if (type->type != NODE_IDENTIFIER) {
+			error(p, "expected struct definition or identifier.");
+			return NULL;
+		}
+	}
+
+
+	if (!match_peek(p, TOKEN_IDENTIFIER)) {
+		error(p, "expected identifier.");
+		return NULL;
+	}
+
+	member *m = arena_alloc(p->allocator, sizeof(member));
+	m->type = type;
+	m->name = peek(p)->lexeme;
+	m->name_len = peek(p)->lexeme_len;
+	advance(p);
+
+
+	return m;
+}
+
+static ast_node *parse_struct(parser *p)
+{
+	ast_node *structure = arena_alloc(p->allocator, sizeof(ast_node));
+	structure->type = NODE_STRUCT;
+	if (match_peek(p, TOKEN_IDENTIFIER)) {
+		/* Named structure */
+		structure->expr.structure.name = peek(p)->lexeme;
+		structure->expr.structure.name_len = peek(p)->lexeme_len;
+		advance(p);
+	} else if (!match_peek(p, TOKEN_LCURLY)) {
+		error(p, "expected identifier or `{`.");
+		return NULL;
+	} else {
+		structure->expr.structure.name = NULL;
+		structure->expr.structure.name_len = 0;
+	}
+
+	if (!match(p, TOKEN_LCURLY)) {
+		error(p, "expected `{`.");
+		return NULL;
+	}
+
+	member *prev = parse_member(p);
+	member *head = prev;
+	structure->expr.structure.members = head;
+	if (!prev) {
+		error(p, "invalid struct definition. Structs should contain at least 1 member.");
+		return NULL;
+	}
+	if (!match(p, TOKEN_COMMA)) {
+		if (!match(p, TOKEN_RCURLY)) {
+			error(p, "expected `,`.");
+			return NULL;
+		} else {
+			return structure;
+		}
+	}
+	while (!match(p, TOKEN_RCURLY)) {
+		member *current = parse_member(p);
+		if (!current) {
+			error(p, "expected member definition.");
+			return NULL;
+		}
+		prev->next = current;
+		if (!match(p, TOKEN_COMMA)) {
+			if (!match_peek(p, TOKEN_RCURLY)) {
+				error(p, "expected `,`.");
+				return NULL;
+			}
+		}
+
+		prev = current;
+	}
+
+	return structure;
+}
+
 static ast_node *parse_statement(parser *p)
 {
 	if (match(p, TOKEN_BREAK))
@@ -801,6 +894,10 @@ static ast_node *parse_statement(parser *p)
 		}
 
 		return node;
+	}
+	else if (match(p, TOKEN_STRUCT))
+	{
+		return parse_struct(p);
 	}
 	else
 	{

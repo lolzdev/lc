@@ -1,1 +1,4 @@
-u32 a = 3;
+struct {
+	struct { u32 x, u32 y } a,
+	u32 b,
+}
