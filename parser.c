@@ -973,6 +973,24 @@ static ast_node *parse_statement(parser *p)
 	else if (match(p, TOKEN_IF)) {
 		return parse_if(p);
 	}
+	else if (match_peek(p, TOKEN_IDENTIFIER) && p->tokens->next && p->tokens->next->type == TOKEN_EQ)
+	{
+		/* Variable declaration. */
+		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+		node->type = NODE_BINARY;
+		node->expr.binary.left = parse_factor(p);
+		advance(p);
+		node->expr.binary.right = parse_expression(p);
+		node->expr.binary.operator = OP_ASSIGN;
+
+		if (!match(p, TOKEN_SEMICOLON))
+		{
+			error(p, "expected `;` after statement.");
+			return NULL;
+		}
+
+		return node;
+	}
 	else if (match_peek(p, TOKEN_IDENTIFIER) && p->tokens->next && p->tokens->next->type == TOKEN_IDENTIFIER)
 	{
 		/* Variable declaration. */
@@ -1037,6 +1055,11 @@ static void parse(parser *p)
 	ast_node *tail = p->ast;
 	ast_node *expr = parse_statement(p);
 	while (expr) {
+		if (expr->type != NODE_FUNCTION && expr->type != NODE_VAR_DECL && expr->type != NODE_IMPORT &&
+			expr->type != NODE_STRUCT && expr->type != NODE_ENUM && expr->type != NODE_ENUM) {
+			error(p, "expected function, struct, enum, union, global variable or import statement.");
+			return;
+		}
 		tail->expr.unit_node.next = arena_alloc(p->allocator, sizeof(ast_node));
 		tail->expr.unit_node.next->expr.unit_node.expr = expr;
 		tail = tail->expr.unit_node.next;
