@@ -975,7 +975,7 @@ static ast_node *parse_statement(parser *p)
 	}
 	else if (match_peek(p, TOKEN_IDENTIFIER) && p->tokens->next && p->tokens->next->type == TOKEN_EQ)
 	{
-		/* Variable declaration. */
+		/* Variable assignment. */
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_BINARY;
 		node->expr.binary.left = parse_factor(p);
