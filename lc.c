@@ -150,6 +150,14 @@ void print_ast(ast_node *node, int depth) {
 				m = m->next;
 			}
 			break;
+		case NODE_ENUM:
+			printf("Enum: %.*s\n", (int)node->expr.enm.name_len, node->expr.enm.name);
+			variant *v = node->expr.enm.variants;
+			while (v) {
+				printf("\t%.*s\n", (int)v->name_len, v->name);
+				v = v->next;
+			}
+			break;
 		case NODE_IF:
 			printf("If:\n");
 			print_ast(node->expr.whle.condition, depth + 1);

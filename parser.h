@@ -64,6 +64,13 @@ typedef struct {
 	member *params;
 } function;
 
+typedef struct _variant {
+	struct _ast_node *value;
+	char *name;
+	usize name_len;
+	struct _variant *next;
+} variant;
+
 typedef enum {
 	NODE_IDENTIFIER,
 	NODE_INTEGER,
@@ -184,6 +191,11 @@ typedef struct _ast_node {
 			char *name;
 			usize name_len;
 		} structure;
+		struct {
+			variant *variants;
+			char *name;
+			usize name_len;
+		} enm; // enum
 	} expr;
 } ast_node;
 

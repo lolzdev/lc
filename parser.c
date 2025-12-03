@@ -727,6 +727,91 @@ static member *parse_member(parser *p)
 	return m;
 }
 
+static variant *parse_variant(parser *p)
+{
+	if (!match_peek(p, TOKEN_IDENTIFIER)) {
+		error(p, "expected identifier.");
+		return NULL;
+	}
+
+	variant *v = arena_alloc(p->allocator, sizeof(variant));
+	v->name = peek(p)->lexeme;
+	v->name_len = peek(p)->lexeme_len;
+	advance(p);
+
+	if (match(p, TOKEN_EQ)) {
+		v->value = parse_factor(p);
+		if (!v->value) {
+			error(p, "expected integer.");
+			return NULL;
+		}
+
+		if (v->value->type != NODE_INTEGER) {
+			error(p, "expected integer.");
+			return NULL;
+		}
+	}
+
+	return v;
+}
+
+static ast_node *parse_enum(parser *p)
+{
+	ast_node *enm = arena_alloc(p->allocator, sizeof(ast_node));
+	enm->type = NODE_ENUM;
+	if (match_peek(p, TOKEN_IDENTIFIER)) {
+		/* Named enum */
+		enm->expr.enm.name = peek(p)->lexeme;
+		enm->expr.enm.name_len = peek(p)->lexeme_len;
+		advance(p);
+	} else if (!match_peek(p, TOKEN_LCURLY)) {
+		error(p, "expected identifier or `{`.");
+		return NULL;
+	} else {
+		enm->expr.enm.name = NULL;
+		enm->expr.enm.name_len = 0;
+	}
+
+	if (!match(p, TOKEN_LCURLY)) {
+		error(p, "expected `{`.");
+		return NULL;
+	}
+
+	variant *prev = parse_variant(p);
+	variant *head = prev;
+	enm->expr.enm.variants = head;
+	if (!prev) {
+		error(p, "invalid enum definition. Enums should contain at least 1 variant.");
+		return NULL;
+	}
+	if (!match(p, TOKEN_COMMA)) {
+		if (!match(p, TOKEN_RCURLY)) {
+			error(p, "expected `,`.");
+			return NULL;
+		} else {
+			return enm;
+		}
+	}
+	while (!match(p, TOKEN_RCURLY)) {
+		variant *current = parse_variant(p);
+		if (!current) {
+			error(p, "expected variant definition.");
+			return NULL;
+		}
+		prev->next = current;
+		if (!match(p, TOKEN_COMMA)) {
+			if (!match_peek(p, TOKEN_RCURLY)) {
+				error(p, "expected `,`.");
+				return NULL;
+			}
+		}
+
+		prev = current;
+	}
+
+	return enm;
+}
+
 static ast_node *parse_struct(parser *p)
 {
 	ast_node *structure = arena_alloc(p->allocator, sizeof(ast_node));
@@ -916,6 +1001,10 @@ static ast_node *parse_statement(parser *p)
 	else if (match(p, TOKEN_STRUCT))
 	{
 		return parse_struct(p);
+	}
+	else if (match(p, TOKEN_ENUM))
+	{
+		return parse_enum(p);
 	}
 	else if (match(p, TOKEN_UNION))
 	{
