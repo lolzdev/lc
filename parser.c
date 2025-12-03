@@ -448,76 +448,81 @@ ast_node *parse_expression(parser *p)
 		return node;
 	}
 
-	if (match(p, TOKEN_LCURLY)) {
-		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
-		node->type = NODE_STRUCT_INIT;
+	if (match(p, TOKEN_DOT)) {
+		if (match(p, TOKEN_LCURLY)) {
+			ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+			node->type = NODE_STRUCT_INIT;
 
-		if (match(p, TOKEN_RCURLY))
-		{
-			node->expr.struct_init.members = NULL;
-			return node;
-		}
-
-		snapshot arena_start = arena_snapshot(p->allocator);
-		node->expr.struct_init.members = arena_alloc(p->allocator, sizeof(ast_node));
-		node->expr.struct_init.members->type = NODE_UNIT;
-		node->expr.struct_init.members->expr.unit_node.expr = parse_expression(p);
-		ast_node *tail = node->expr.struct_init.members;
-		node->expr.struct_init.members_len = 1;
-
-		/* In this case, there is only one parameter */
-		if (match(p, TOKEN_RCURLY))
-		{
-			return node;
-		}
-
-		if (match(p, TOKEN_COMMA))
-		{
-			ast_node *expr = parse_expression(p);
-			if (expr)
+			if (match(p, TOKEN_RCURLY))
 			{
-				while (!match(p, TOKEN_RCURLY))
+				node->expr.struct_init.members = NULL;
+				return node;
+			}
+
+			snapshot arena_start = arena_snapshot(p->allocator);
+			node->expr.struct_init.members = arena_alloc(p->allocator, sizeof(ast_node));
+			node->expr.struct_init.members->type = NODE_UNIT;
+			node->expr.struct_init.members->expr.unit_node.expr = parse_expression(p);
+			ast_node *tail = node->expr.struct_init.members;
+			node->expr.struct_init.members_len = 1;
+
+			/* In this case, there is only one parameter */
+			if (match(p, TOKEN_RCURLY))
+			{
+				return node;
+			}
+
+			if (match(p, TOKEN_COMMA))
+			{
+				ast_node *expr = parse_expression(p);
+				if (expr)
 				{
-					if (!match(p, TOKEN_COMMA))
+					while (!match(p, TOKEN_RCURLY))
 					{
-						error(p, "expected `}`.");
-						arena_reset_to_snapshot(p->allocator, arena_start);
-						return NULL;
+						if (!match(p, TOKEN_COMMA))
+						{
+							error(p, "expected `}`.");
+							arena_reset_to_snapshot(p->allocator, arena_start);
+							return NULL;
+						}
+						tail->expr.unit_node.next = arena_alloc(p->allocator, sizeof(ast_node));
+						tail->expr.unit_node.next->expr.unit_node.expr = expr;
+						tail = tail->expr.unit_node.next;
+						tail->type = NODE_UNIT;
+						expr = parse_expression(p);
+						if (!expr)
+						{
+							error(p, "expected `}`.");
+							arena_reset_to_snapshot(p->allocator, arena_start);
+							return NULL;
+						}
+						node->expr.struct_init.members_len += 1;
 					}
+
 					tail->expr.unit_node.next = arena_alloc(p->allocator, sizeof(ast_node));
 					tail->expr.unit_node.next->expr.unit_node.expr = expr;
 					tail = tail->expr.unit_node.next;
 					tail->type = NODE_UNIT;
-					expr = parse_expression(p);
-					if (!expr)
-					{
-						error(p, "expected `}`.");
-						arena_reset_to_snapshot(p->allocator, arena_start);
-						return NULL;
-					}
-					node->expr.struct_init.members_len += 1;
 				}
-
-				tail->expr.unit_node.next = arena_alloc(p->allocator, sizeof(ast_node));
-				tail->expr.unit_node.next->expr.unit_node.expr = expr;
-				tail = tail->expr.unit_node.next;
-				tail->type = NODE_UNIT;
+				else
+				{
+					error(p, "expected member initialization.");
+					arena_reset_to_snapshot(p->allocator, arena_start);
+					return NULL;
+				}
 			}
 			else
 			{
-				error(p, "expected member initialization.");
+				error(p, "expected `}`.");
 				arena_reset_to_snapshot(p->allocator, arena_start);
 				return NULL;
 			}
-		}
-		else
-		{
-			error(p, "expected `}`.");
-			arena_reset_to_snapshot(p->allocator, arena_start);
+
+			return node;
+		} else {
+			error(p, "unexpected `.`");
 			return NULL;
 		}
-
-		return node;
 	}
 
 	if (p->tokens && ((p->tokens->type >= TOKEN_DOUBLE_EQ && p->tokens->type <= TOKEN_NOT_EQ) || (p->tokens->type >= TOKEN_LSHIFT_EQ && p->tokens->type <= TOKEN_DOUBLE_AND)))
@@ -580,31 +585,56 @@ ast_node *parse_expression(parser *p)
 
 static ast_node *parse_compound(parser *p)
 {
-	if (!match(p, TOKEN_LCURLY))
-	{
-		error(p, "expected `{` for beginning of a block.");
+	if (!match(p, TOKEN_LCURLY)) {
+		error(p, "expected `{`.");
 		return NULL;
 	}
-	ast_node *compound = arena_alloc(p->allocator, sizeof(ast_node));
-	compound->type = NODE_UNIT;
-	compound->expr.unit_node.expr = NULL;
-    compound->expr.unit_node.next = NULL;
-	ast_node* tail = compound;
-	// FIXME: This only works with correct blocks, incorrect blocks segfault
-	while (p->tokens->type != TOKEN_RCURLY &&
-           p->tokens->type != TOKEN_END)
+
+	ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+	node->type = NODE_UNIT;
+
+	if (match(p, TOKEN_RCURLY))
 	{
-		ast_node* stmt = parse_statement(p);
+		node->expr.unit_node.expr = NULL;
+		node->expr.unit_node.next = NULL;
+		return node;
+	}
+
+	snapshot arena_start = arena_snapshot(p->allocator);
+	node->expr.unit_node.expr = parse_statement(p);
+	ast_node *tail = node;
+
+	/* In this case, there is only one parameter */
+	if (match(p, TOKEN_RCURLY))
+	{
+		return node;
+	}
+
+	ast_node *expr = parse_statement(p);
+	if (expr)
+	{
+		while (!match(p, TOKEN_RCURLY))
+		{
+			tail->expr.unit_node.next = arena_alloc(p->allocator, sizeof(ast_node));
+			tail->expr.unit_node.next->expr.unit_node.expr = expr;
+			tail = tail->expr.unit_node.next;
+			tail->type = NODE_UNIT;
+			expr = parse_statement(p);
+			if (!expr)
+			{
+				error(p, "expected `}`.");
+				arena_reset_to_snapshot(p->allocator, arena_start);
+				return NULL;
+			}
+		}
+
 		tail->expr.unit_node.next = arena_alloc(p->allocator, sizeof(ast_node));
-		tail->expr.unit_node.next->expr.unit_node.expr = stmt;
+		tail->expr.unit_node.next->expr.unit_node.expr = expr;
 		tail = tail->expr.unit_node.next;
 		tail->type = NODE_UNIT;
 	}
-	if (p->tokens->type != TOKEN_RCURLY) {
-		error(p, "Unterminated block.");
-		return NULL;
-	}
-	return compound;
+
+	return node;
 }
 
 static ast_node *parse_for(parser *p)
@@ -650,12 +680,12 @@ static ast_node *parse_for(parser *p)
 					arena_reset_to_snapshot(p->allocator, arena_start);
 					return NULL;
 				}
-				node->expr.fr.slice_len += 1;
 			}
 
 			tail->expr.unit_node.next = arena_alloc(p->allocator, sizeof(ast_node));
 			tail->expr.unit_node.next->expr.unit_node.expr = expr;
 			tail = tail->expr.unit_node.next;
+			node->expr.fr.slice_len += 1;
 			tail->type = NODE_UNIT;
 		}
 		else
@@ -715,13 +745,13 @@ parse_captures:
 					arena_reset_to_snapshot(p->allocator, arena_start);
 					return NULL;
 				}
-				node->expr.fr.capture_len += 1;
 			}
 
 			tail->expr.unit_node.next = arena_alloc(p->allocator, sizeof(ast_node));
 			tail->expr.unit_node.next->expr.unit_node.expr = expr;
 			tail = tail->expr.unit_node.next;
 			tail->type = NODE_UNIT;
+			node->expr.fr.capture_len += 1;
 		} else {
 			error(p, "expected identifier.");
 			arena_reset_to_snapshot(p->allocator, arena_start);
@@ -734,6 +764,7 @@ parse_captures:
 	}
 
 parse_body:;
+	printf("%d %d\n", node->expr.fr.capture_len, node->expr.fr.slice_len);
 	if (node->expr.fr.capture_len != node->expr.fr.slice_len) {
 		error(p, "invalid number of captures.");
 		return NULL;
@@ -747,6 +778,7 @@ parse_body:;
 static ast_node *parse_while(parser *p)
 {
 	ast_node *condition = parse_expression(p);
+	//printf("%d %d\n", p->tokens->type, TOKEN_RCURLY);
 	ast_node *body = parse_compound(p);
 	ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 	node->type = NODE_WHILE;

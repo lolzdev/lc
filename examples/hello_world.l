@@ -1,6 +1,8 @@
-import test;
+import std;
 
 i32 main()
 {
-	print_msg("Hello world!");
+	print("Hello world!\n");
+
+	return 0;
 }

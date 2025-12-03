@@ -1,21 +1,15 @@
-import std::io;
+import std;
 
 i32 main()
 {
-	[u32] list = [1, 2, 3, 4, 5];
-
-	// iterative loop
-	loop (0.., list) |i, v| {
-		printf("%d\n", i);
+	u32 x = 4;
+	loop x == 3 {
+		u32 b = 3;
 	}
 
-	// conditional loop
-	loop a == 3 {
+	loop (0.., test) |k, i| {
 
 	}
+	u32 b = 3;
 
-	// infinite loop
-	loop {
-
-	}
 }

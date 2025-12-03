@@ -127,6 +127,7 @@ void print_ast(ast_node *node, int depth) {
 			for (usize i = 0; i < node->expr.compound.stmt_len; ++i) {
 				print_ast(node->expr.compound.statements[i], depth + 1);
 			}
+			break;
 		case NODE_CALL:
 			printf("Call: %.*s\n", (int)node->expr.call.name_len, node->expr.call.name);
 			current = node->expr.call.parameters;
@@ -219,7 +220,7 @@ void print_ast(ast_node *node, int depth) {
 
 int main(void)
 {
-	FILE *fp = fopen("test.l", "r");
+	FILE *fp = fopen("examples/for.l", "r");
 	usize size = 0;
 	fseek(fp, 0, SEEK_END);
 	size = ftell(fp);
