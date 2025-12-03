@@ -168,7 +168,13 @@ void print_ast(ast_node *node, int depth) {
 			print_ast(node->expr.var_decl.value, depth + 1);
 			break;
 		case NODE_FUNCTION:
-			printf("FunctionDef (Fields missing in struct)\n");
+			printf("Function: %.*s\n", (int)node->expr.function.name_len, node->expr.function.name);
+			m = node->expr.function.parameters;
+			while (m) {
+				print_ast(m->type, depth + 1);
+				m = m->next;
+			}
+			print_ast(node->expr.function.body, depth + 1);
 			break;
 		case NODE_RETURN:
 			printf("Return:\n");
@@ -203,7 +209,7 @@ void print_ast(ast_node *node, int depth) {
 
 int main(void)
 {
-	FILE *fp = fopen("test.c", "r");
+	FILE *fp = fopen("test.l", "r");
 	usize size = 0;
 	fseek(fp, 0, SEEK_END);
 	size = ftell(fp);

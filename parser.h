@@ -192,6 +192,15 @@ typedef struct _ast_node {
 			usize name_len;
 		} structure;
 		struct {
+			member *parameters;
+			usize parameters_len;
+			char *name;
+			usize name_len;
+			char *type;
+			usize type_len;
+			struct _ast_node *body;
+		} function;
+		struct {
 			variant *variants;
 			char *name;
 			usize name_len;

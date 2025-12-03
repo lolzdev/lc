@@ -869,6 +869,60 @@ static ast_node *parse_struct(parser *p)
 	return structure;
 }
 
+static ast_node *parse_function(parser *p)
+{
+	ast_node *fn = arena_alloc(p->allocator, sizeof(ast_node));
+	fn->type = NODE_FUNCTION;
+	fn->expr.function.type = peek(p)->lexeme;
+	fn->expr.function.type_len = peek(p)->lexeme_len;
+	advance(p);
+	fn->expr.function.name = peek(p)->lexeme;
+	fn->expr.function.name_len = peek(p)->lexeme_len;
+	advance(p);
+	/* Consume `(` */
+	advance(p);
+
+	if (match(p, TOKEN_RPAREN)) {
+		fn->expr.function.body = parse_compound(p);
+		fn->expr.function.parameters = NULL;
+		fn->expr.function.parameters_len = 0;
+		return fn;
+	}
+	member *prev = parse_member(p);
+	member *head = prev;
+	fn->expr.function.parameters = head;
+	fn->expr.function.parameters_len = 1;
+	if (!match(p, TOKEN_COMMA)) {
+		if (!match(p, TOKEN_RPAREN)) {
+			error(p, "expected `,`.");
+			return NULL;
+		} else {
+			fn->expr.function.body = parse_compound(p);
+			return fn;
+		}
+	}
+	while (!match(p, TOKEN_RPAREN)) {
+		member *current = parse_member(p);
+		if (!current) {
+			error(p, "expected parameter.");
+			return NULL;
+		}
+		prev->next = current;
+		if (!match(p, TOKEN_COMMA)) {
+			if (!match_peek(p, TOKEN_RPAREN)) {
+				error(p, "expected `,`.");
+				return NULL;
+			}
+		}
+		fn->expr.function.parameters_len += 1;
+
+		prev = current;
+	}
+	fn->expr.function.body = parse_compound(p);
+
+	return fn;
+}
+
 static ast_node *parse_statement(parser *p)
 {
 	if (match(p, TOKEN_BREAK))
@@ -993,6 +1047,10 @@ static ast_node *parse_statement(parser *p)
 	}
 	else if (match_peek(p, TOKEN_IDENTIFIER) && p->tokens->next && p->tokens->next->type == TOKEN_IDENTIFIER)
 	{
+		if (p->tokens->next->next && p->tokens->next->next->type == TOKEN_LPAREN) {
+			/* Function definition. */
+			return parse_function(p);
+		}
 		/* Variable declaration. */
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_VAR_DECL;
