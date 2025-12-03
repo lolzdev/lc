@@ -684,6 +684,10 @@ static member *parse_member(parser *p)
 	if (match(p, TOKEN_STRUCT)) {
 		type = parse_struct(p);
 	}
+	if (match(p, TOKEN_UNION)) {
+		type = parse_struct(p);
+		type->type = NODE_UNION;
+	}
 	if (!type) {
 		type = parse_factor(p);
 		if (!type) {
@@ -898,6 +902,12 @@ static ast_node *parse_statement(parser *p)
 	else if (match(p, TOKEN_STRUCT))
 	{
 		return parse_struct(p);
+	}
+	else if (match(p, TOKEN_UNION))
+	{
+		ast_node *u = parse_struct(p);
+		u->type = NODE_UNION;
+		return u;
 	}
 	else
 	{
