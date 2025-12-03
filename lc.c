@@ -69,13 +69,14 @@ void print_ast(ast_node *node, int depth) {
 			printf("Identifier: %.*s\n", (int)node->expr.string.len, node->expr.string.start);
 			break;
 		case NODE_CAST:
-			printf("Cast: %.*s\n", (int)node->expr.cast.type_len, node->expr.cast.type);
+			printf("Cast:\n");
+			print_ast(node->expr.cast.type, depth);
 			print_ast(node->expr.cast.value, depth + 1);
 			break;
 		case NODE_ACCESS:
 			printf("Access:\n");
-				print_ast(node->expr.access.expr, depth + 1);
-				print_ast(node->expr.access.member, depth + 1);
+			print_ast(node->expr.access.expr, depth + 1);
+			print_ast(node->expr.access.member, depth + 1);
 			break;
 		case NODE_LABEL:
 			printf("Label: %.*s\n", (int)node->expr.label.name_len, node->expr.label.name);
@@ -134,6 +135,14 @@ void print_ast(ast_node *node, int depth) {
 				current = current->expr.unit_node.next;
 			}
 			break;
+		case NODE_STRUCT_INIT:
+			printf("Struct init:\n");
+			current = node->expr.struct_init.members;
+			while (current && current->type == NODE_UNIT) {
+				print_ast(current->expr.unit_node.expr, depth + 1);
+				current = current->expr.unit_node.next;
+			}
+			break;
 		case NODE_STRUCT:
 			printf("Struct: %.*s\n", (int)node->expr.structure.name_len, node->expr.structure.name);
 			member *m = node->expr.structure.members;
@@ -164,7 +173,8 @@ void print_ast(ast_node *node, int depth) {
 			print_ast(node->expr.whle.body, depth + 1);
 			break;
 		case NODE_VAR_DECL:
-			printf("VarDecl: %.*s: %.*s\n", (int)node->expr.var_decl.name_len, node->expr.var_decl.name, (int)node->expr.var_decl.type_len, node->expr.var_decl.type);
+			printf("VarDecl: ");
+			print_ast(node->expr.var_decl.type, 0);
 			print_ast(node->expr.var_decl.value, depth + 1);
 			break;
 		case NODE_FUNCTION:

@@ -16,11 +16,11 @@ typedef enum {
 	TOKEN_AND, // &
 	TOKEN_HAT, // ^
 	TOKEN_PIPE, // |
-	TOKEN_EQ, // =
 	TOKEN_ARROW, // ->
 	TOKEN_LSHIFT, // <<
 	TOKEN_RSHIFT, // >>
 	TOKEN_DOUBLE_EQ, // ==
+	TOKEN_EQ, // =
 	TOKEN_LESS_THAN, // <
 	TOKEN_GREATER_THAN, // >
 	TOKEN_LESS_EQ, // <=

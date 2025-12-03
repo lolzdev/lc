@@ -99,14 +99,24 @@ typedef enum {
 	NODE_UNION,
 	NODE_VAR_DECL,
 	NODE_FUNCTION,
-	NODE_TERNARY,
-	NODE_SWITCH,
+	NODE_PTR_TYPE,
+	NODE_TERNARY, /* TODO */
+	NODE_SWITCH, /* TODO */
+	NODE_STRUCT_INIT,
 	NODE_UNIT,
 } node_type;
+
+#define PTR_SLICE 0x0
+#define PTR_RAW 0x1
+#define PTR_ARRAY 0x2
 
 typedef struct _ast_node {
 	node_type type;
 	union {
+		struct {
+			struct _ast_node *type;
+			u8 flags;
+		} ptr_type;
 		struct {
 			char *name;
 			usize name_len;
@@ -134,8 +144,7 @@ typedef struct _ast_node {
 		} ternary;
 		struct {
 			struct _ast_node *value;
-			char *type;
-			usize type_len;
+			struct _ast_node *type;
 		} cast;
 		struct {
 			struct _ast_node *expr;
@@ -183,8 +192,7 @@ typedef struct _ast_node {
 			struct _ast_node *value;
 			char *name;
 			usize name_len;
-			char *type;
-			usize type_len;
+			struct _ast_node *type;
 		} var_decl;
 		struct {
 			member *members;
@@ -196,8 +204,7 @@ typedef struct _ast_node {
 			usize parameters_len;
 			char *name;
 			usize name_len;
-			char *type;
-			usize type_len;
+			struct _ast_node *type;
 			struct _ast_node *body;
 		} function;
 		struct {
@@ -205,6 +212,10 @@ typedef struct _ast_node {
 			char *name;
 			usize name_len;
 		} enm; // enum
+		struct {
+			struct _ast_node *members;
+			usize members_len;
+		} struct_init;
 	} expr;
 } ast_node;
 
