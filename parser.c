@@ -830,12 +830,10 @@ static ast_node *parse_type(parser *p)
 	
 	if (match(p, TOKEN_STRUCT)) {
 		type = parse_struct(p);
-	}
-	if (match(p, TOKEN_UNION)) {
+	} else if (match(p, TOKEN_UNION)) {
 		type = parse_struct(p);
 		type->type = NODE_UNION;
-	}
-	if (match(p, TOKEN_LSQUARE)) {
+	} else if (match(p, TOKEN_LSQUARE)) {
 		/* Array/slice type */
 		type = arena_alloc(p->allocator, sizeof(ast_node));
 		type->type = NODE_PTR_TYPE;
@@ -853,8 +851,7 @@ static ast_node *parse_type(parser *p)
 			error(p, "expected `]`.");
 			return NULL;
 		}
-	}
-	if (match(p, TOKEN_STAR)) {
+	} else if (match(p, TOKEN_STAR)) {
 		type = arena_alloc(p->allocator, sizeof(ast_node));
 		type->type = NODE_PTR_TYPE;
 		type->expr.ptr_type.flags |= PTR_RAW;
@@ -863,16 +860,8 @@ static ast_node *parse_type(parser *p)
 			error(p, "expected type.");
 			return NULL;
 		}
-	}
-
-	if (!type) {
+	} else if (match_peek(p, TOKEN_IDENTIFIER)) {
 		type = parse_factor(p);
-		if (!type) {
-			return NULL;
-		}
-		if (type->type != NODE_IDENTIFIER) {
-			return NULL;
-		}
 	}
 
 	return type;
@@ -1093,15 +1082,19 @@ static ast_node *parse_function(parser *p)
 
 static ast_node *parse_statement(parser *p)
 {
-	token *current = p->tokens;
+	token *cur = peek(p);
 	ast_node *type = parse_type(p);
+	if (type && type->type == NODE_STRUCT && type->expr.structure.name_len > 0) {
+		goto skip_struct;
+	}
 	if (type && match_peek(p, TOKEN_IDENTIFIER)) {
 		if (p->tokens->next && p->tokens->next->type == TOKEN_LPAREN) {
 			/* Function definition. */
-			p->tokens = current;
+			p->tokens = cur;
+			printf("%d, %.*s\n", p->tokens->position.row, 3, p->tokens->lexeme);
 			return parse_function(p);
 		}
-		p->tokens = current;
+		p->tokens = cur;
 		/* Variable declaration. */
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_VAR_DECL;
@@ -1115,16 +1108,15 @@ static ast_node *parse_statement(parser *p)
 			node->expr.var_decl.value = NULL;
 		}
 
-		if (!match(p, TOKEN_SEMICOLON))
-		{
+		if (!match(p, TOKEN_SEMICOLON)) {
 			error(p, "expected `;` after statement.");
 			return NULL;
 		}
 
 		return node;
-	} else {
-		p->tokens = current;
 	}
+skip_struct:
+	p->tokens = cur;
 
 	if (match(p, TOKEN_BREAK))
 	{
