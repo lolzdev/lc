@@ -8,14 +8,9 @@
 typedef enum {
 	TYPE_VOID,
 	TYPE_PTR,
-	TYPE_I8,
-	TYPE_I16,
-	TYPE_I32,
-	TYPE_I64,
-	TYPE_U8,
-	TYPE_U16,
-	TYPE_U32,
-	TYPE_U64,
+	TYPE_FLOAT,
+	TYPE_INTEGER,
+	TYPE_UINTEGER,
 	TYPE_STRUCT,
 	TYPE_UNION,
 	TYPE_ENUM,
@@ -24,6 +19,8 @@ typedef enum {
 
 typedef struct _type {
 	type_tag tag;
+	usize size;
+	usize alignment;
 	union {
 		u8 integer;
 		u8 flt; // float
@@ -40,7 +37,6 @@ typedef struct _type {
 		struct {
 			char *name;
 			usize name_len;
-			usize alignment;
 			member *members;
 		} structure;
 		struct {

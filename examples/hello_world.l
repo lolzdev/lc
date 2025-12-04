@@ -1,13 +1,19 @@
 import std;
 
-struct {
-	u32 a,
-	u32 b,
-};
+struct b {
+	a b,
+}
 
-i32 main(usize argc, [*u8] argv)
+struct c {
+	u32 b,
+}
+
+struct a {
+	c b,
+}
+
+i32 main(i32 argc, [*[*u8]] argv)
 {
 	print("Hello world!\n");
-
 	return 0;
 }
