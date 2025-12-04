@@ -100,6 +100,7 @@ static ast_node *parse_call(parser *p)
 {
 	ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 	node->type = NODE_CALL;
+	node->position = p->previous->position;
 	node->expr.call.name = peek(p)->lexeme;
 	node->expr.call.name_len = peek(p)->lexeme_len;
 	advance(p);
@@ -182,6 +183,7 @@ static ast_node *parse_factor(parser *p)
 	{
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_INTEGER;
+		node->position = p->previous->position;
 		node->expr.integer = parse_int(t->lexeme, t->lexeme_len);
 		if (match(p, TOKEN_DOUBLE_DOT)) {
 			ast_node *range = arena_alloc(p->allocator, sizeof(ast_node));
@@ -207,6 +209,7 @@ static ast_node *parse_factor(parser *p)
 	{
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_FLOAT;
+		node->position = p->previous->position;
 		node->expr.flt = parse_float(t->lexeme, t->lexeme_len);
 		return node;
 	}
@@ -221,6 +224,7 @@ static ast_node *parse_factor(parser *p)
 
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_IDENTIFIER;
+		node->position = p->previous->position;
 		node->expr.string.start = t->lexeme;
 		node->expr.string.len = t->lexeme_len;
 		return node;
@@ -229,6 +233,7 @@ static ast_node *parse_factor(parser *p)
 	{
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_STRING;
+		node->position = p->previous->position;
 		node->expr.string.start = t->lexeme;
 		node->expr.string.len = t->lexeme_len;
 		return node;
@@ -237,6 +242,7 @@ static ast_node *parse_factor(parser *p)
 	{
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_CHAR;
+		node->position = p->previous->position;
 		if (t->lexeme_len == 2)
 		{
 			char c;
@@ -318,6 +324,7 @@ ast_node *parse_unary(parser *p)
 
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_UNARY;
+		node->position = p->previous->position;
 		node->expr.unary.operator = op;
 		node->expr.unary.right = parse_expression(p);
 
@@ -330,6 +337,7 @@ ast_node *parse_unary(parser *p)
 		advance(p);
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_CAST;
+		node->position = p->previous->position;
 		node->expr.cast.type = parse_type(p);
 		advance(p);
 		advance(p);
@@ -352,6 +360,7 @@ ast_node *parse_term(parser *p)
 		ast_node *right = parse_factor(p);
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_BINARY;
+		node->position = p->previous->position;
 		node->expr.binary.left = left;
 		node->expr.binary.right = right;
 		node->expr.binary.operator = op;
@@ -376,6 +385,7 @@ ast_node *parse_expression(parser *p)
 		ast_node *right = parse_term(p);
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_BINARY;
+		node->position = p->previous->position;
 		node->expr.binary.left = left;
 		node->expr.binary.right = right;
 		node->expr.binary.operator = op;
@@ -391,6 +401,7 @@ ast_node *parse_expression(parser *p)
 		ast_node *index = parse_expression(p);
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_ARRAY_SUBSCRIPT;
+		node->position = p->previous->position;
 		node->expr.subscript.expr = left;
 		node->expr.subscript.index = index;
 
@@ -415,6 +426,7 @@ ast_node *parse_expression(parser *p)
 		}
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_ACCESS;
+		node->position = p->previous->position;
 		node->expr.access.expr = left;
 		node->expr.access.member = parse_expression(p);
 
@@ -442,6 +454,7 @@ ast_node *parse_expression(parser *p)
 
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_POSTFIX;
+		node->position = p->previous->position;
 		node->expr.unary.operator = op;
 		node->expr.unary.right = left;
 
@@ -452,6 +465,7 @@ ast_node *parse_expression(parser *p)
 		if (match(p, TOKEN_LCURLY)) {
 			ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 			node->type = NODE_STRUCT_INIT;
+			node->position = p->previous->position;
 
 			if (match(p, TOKEN_RCURLY))
 			{
@@ -569,6 +583,7 @@ ast_node *parse_expression(parser *p)
 		advance(p);
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_BINARY;
+		node->position = p->previous->position;
 		node->expr.binary.left = left;
 		node->expr.binary.operator = op;
 		node->expr.binary.right = parse_expression(p);
@@ -592,6 +607,7 @@ static ast_node *parse_compound(parser *p)
 
 	ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 	node->type = NODE_UNIT;
+	node->position = p->previous->position;
 
 	if (match(p, TOKEN_RCURLY))
 	{
@@ -642,6 +658,7 @@ static ast_node *parse_for(parser *p)
 	advance(p);
 	ast_node* node = arena_alloc(p->allocator, sizeof(ast_node));
 	node->type = NODE_FOR;
+	node->position = p->previous->position;
 
 	snapshot arena_start = arena_snapshot(p->allocator);
 	node->expr.fr.slices = arena_alloc(p->allocator, sizeof(ast_node));
@@ -793,6 +810,7 @@ static ast_node *parse_while(parser *p)
 	ast_node *body = parse_compound(p);
 	ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 	node->type = NODE_WHILE;
+	node->position = p->previous->position;
 	node->expr.whle.body = body;
 
 	if (flags & LOOP_AFTER) {
@@ -818,6 +836,7 @@ static ast_node *parse_if(parser *p)
 	ast_node *body = parse_compound(p);
 	ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 	node->type = NODE_IF;
+	node->position = p->previous->position;
 	node->expr.whle.body = body;
 	node->expr.whle.condition = condition;
 	return node;
@@ -837,11 +856,7 @@ static ast_node *parse_type(parser *p)
 		/* Array/slice type */
 		type = arena_alloc(p->allocator, sizeof(ast_node));
 		type->type = NODE_PTR_TYPE;
-		if (match(p, TOKEN_STAR)) {
-			type->expr.ptr_type.flags |= PTR_ARRAY;
-		} else {
-			type->expr.ptr_type.flags |= PTR_SLICE;
-		}
+		type->expr.ptr_type.flags |= PTR_SLICE;
 		type->expr.ptr_type.type = parse_type(p);
 		if (!type->expr.ptr_type.type) {
 			error(p, "expected type.");
@@ -918,6 +933,7 @@ static ast_node *parse_enum(parser *p)
 {
 	ast_node *enm = arena_alloc(p->allocator, sizeof(ast_node));
 	enm->type = NODE_ENUM;
+	enm->position = p->previous->position;
 	if (match_peek(p, TOKEN_IDENTIFIER)) {
 		/* Named enum */
 		enm->expr.enm.name = peek(p)->lexeme;
@@ -975,6 +991,7 @@ static ast_node *parse_struct(parser *p)
 {
 	ast_node *structure = arena_alloc(p->allocator, sizeof(ast_node));
 	structure->type = NODE_STRUCT;
+	structure->position = p->previous->position;
 	if (match_peek(p, TOKEN_IDENTIFIER)) {
 		/* Named structure */
 		structure->expr.structure.name = peek(p)->lexeme;
@@ -1091,13 +1108,13 @@ static ast_node *parse_statement(parser *p)
 		if (p->tokens->next && p->tokens->next->type == TOKEN_LPAREN) {
 			/* Function definition. */
 			p->tokens = cur;
-			printf("%d, %.*s\n", p->tokens->position.row, 3, p->tokens->lexeme);
 			return parse_function(p);
 		}
 		p->tokens = cur;
 		/* Variable declaration. */
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_VAR_DECL;
+		node->position = p->previous->position;
 		node->expr.var_decl.type = parse_type(p);
 		node->expr.var_decl.name = p->tokens->lexeme;
 		node->expr.var_decl.name_len = p->tokens->lexeme_len;
@@ -1127,6 +1144,7 @@ skip_struct:
 		}
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_BREAK;
+		node->position = p->previous->position;
 		return node;
 	}
 	else if (match(p, TOKEN_RETURN))
@@ -1146,6 +1164,7 @@ skip_struct:
 
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_RETURN;
+		node->position = p->previous->position;
 		node->expr.ret.value = expr;
 		return node;
 	}
@@ -1154,6 +1173,7 @@ skip_struct:
 		/* In this case, this is a label. */
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_LABEL;
+		node->position = p->previous->position;
 		node->expr.label.name = p->tokens->lexeme;
 		node->expr.label.name_len = p->tokens->lexeme_len;
 		advance(p);
@@ -1170,6 +1190,7 @@ skip_struct:
 		}
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_GOTO;
+		node->position = p->previous->position;
 		node->expr.label.name = p->tokens->lexeme;
 		node->expr.label.name_len = p->tokens->lexeme_len;
 		advance(p);
@@ -1196,6 +1217,7 @@ skip_struct:
 
 		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
 		node->type = NODE_IMPORT;
+		node->position = p->previous->position;
 		node->expr.import.path = expr;
 
 		if (!match(p, TOKEN_SEMICOLON))

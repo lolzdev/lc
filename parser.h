@@ -109,7 +109,6 @@ typedef enum {
 
 #define PTR_SLICE 0x0
 #define PTR_RAW 0x1
-#define PTR_ARRAY 0x2
 
 #define LOOP_WHILE 0x1
 #define LOOP_UNTIL 0x2
@@ -117,6 +116,7 @@ typedef enum {
 
 typedef struct _ast_node {
 	node_type type;
+	source_pos position;
 	union {
 		struct {
 			struct _ast_node *type;
