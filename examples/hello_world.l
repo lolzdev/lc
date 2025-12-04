@@ -1,11 +1,11 @@
+struct a {
+	b hello,
+}
+
 struct b {
-	a ciao,
+	c ciao,
 }
 
 struct c {
-	u32 test,
-}
-
-struct a {
-	c hello,
+	b test,
 }

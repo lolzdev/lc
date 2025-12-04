@@ -20,7 +20,11 @@ static struct { char *key; type *value; } *type_reg;
 /* Print the error message and sync the parser. */
 static void error(ast_node *n, char *msg)
 {
-	printf("\x1b[31m\x1b[1merror\x1b[0m\x1b[1m:%ld:%ld:\x1b[0m %s\n", n->position.row, n->position.column, msg);
+	if (n) {
+		printf("\x1b[31m\x1b[1merror\x1b[0m\x1b[1m:%ld:%ld:\x1b[0m %s\n", n->position.row, n->position.column, msg);
+	} else {
+		printf("\x1b[31m\x1b[1merror\x1b[0m\x1b[1m:\x1b[0m %s\n", msg);
+	}
 }
 
 static char *intern_string(sema *s, char *str, usize len)
@@ -180,7 +184,8 @@ end:
 
 	res_node **nodes = NULL;
 	res_node **ordered = NULL;
-	for (int i=0; i < shlen(types); i++) {
+	usize node_count = shlen(types);
+	for (int i=0; i < node_count; i++) {
 		if (arrlen(types[i].value->node.in) == 0) {
 			arrput(nodes, &types[i].value->node);
 		}
@@ -206,10 +211,14 @@ end:
 		}
 	}
 
+	if (arrlen(ordered) != node_count) {
+		error(NULL, "cycling struct definition.");
+	}
+
 	for (int i=0; i < arrlen(ordered); i++) {
 		type *t = ordered[i]->value;
 		if (t && (t->tag == TYPE_STRUCT || t->tag == TYPE_UNION)) {
-			char *name = intern_string(s, t->data.structure.name, t->data.structure.name_len);
+			char *name = t->name;
 			printf("%s\n", name);
 			register_type(s, name, t);
 		}
