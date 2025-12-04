@@ -3,9 +3,9 @@ struct a {
 }
 
 struct b {
-	c ciao,
+	u32 ciao,
 }
 
 struct c {
-	b test,
+	u32 test,
 }

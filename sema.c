@@ -85,6 +85,9 @@ static void order_type(sema *s, ast_node *node)
 			graph_node = arena_alloc(s->allocator, sizeof(pair));
 			graph_node->node.in = NULL;
 			graph_node->node.out = NULL;
+		} else if (graph_node->complete) {
+			error(node, "type already defined.");
+			return;
 		}
 		graph_node->node.value = t;
 
@@ -101,6 +104,7 @@ static void order_type(sema *s, ast_node *node)
 				p->node.out = NULL;
 				p->node.in = NULL;
 				p->node.value = NULL;
+				p->complete = false;
 				shput(types, name, p);
 			}
 
@@ -111,6 +115,7 @@ static void order_type(sema *s, ast_node *node)
 		}
 
 		shput(types, k, graph_node);
+		graph_node->complete = true;
 	}
 }
 
