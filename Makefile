@@ -3,7 +3,7 @@
 
 include config.mk
 
-SRC = lc.c utils.c lexer.c parser.c
+SRC = lc.c utils.c lexer.c parser.c sema.c
 HDR = config.def.h utils.h lexer.h parser.h sema.h
 OBJ = ${SRC:.c=.o}
 

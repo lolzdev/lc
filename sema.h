@@ -1,6 +1,10 @@
 #ifndef SEMA_H
 #define SEMA_H
 
+#include "parser.h"
+#include "stb_ds.h"
+#include "utils.h"
+
 typedef enum {
 	TYPE_VOID,
 	TYPE_PTR,
@@ -15,6 +19,7 @@ typedef enum {
 	TYPE_STRUCT,
 	TYPE_UNION,
 	TYPE_ENUM,
+	TYPE_GENERIC,
 } type_tag;
 
 typedef struct _type {
@@ -26,29 +31,31 @@ typedef struct _type {
 			bool is_const;
 			bool is_volatile;
 			u16 alignment;
-			struct _type child;
+			struct _type *child;
 		} ptr;
 		struct {
 			usize len;
-			struct _type child;
+			struct _type *child;
 		} array;
 		struct {
-			struct_layout layout;
 			char *name;
 			usize name_len;
 			usize alignment;
 			member *members;
-			function_decl *decls;
 		} structure;
 		struct {
-			struct_layout layout;
 			char *name;
 			usize name_len;
-			usize alignment;
-			member *members;
-			function_decl *decls;
-		} enum;
+			variant *variants;
+		} enm;
 	} data;
 } type;
+
+typedef struct {
+	arena *allocator;
+	ast_node *ast;
+} sema;
+
+sema *sema_init(parser *p, arena *a);
 
 #endif

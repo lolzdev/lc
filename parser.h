@@ -3,6 +3,7 @@
 
 #include "lexer.h"
 #include "utils.h"
+#include <stdbool.h>
 
 struct _ast_node;
 

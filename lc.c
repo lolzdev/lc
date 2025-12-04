@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "lexer.h"
 #include "parser.h"
+#include "sema.h"
 
 void print_indent(int depth) {
 	for (int i = 0; i < depth; i++) printf("  ");
@@ -234,6 +235,7 @@ int main(void)
 	lexer *l = lexer_init(src, size, &a);
 	parser *p = parser_init(l, &a);
 	print_ast(p->ast, 0);
+	sema *s = sema_init(p, &a);
 
 	arena_deinit(a);
 
