@@ -21,13 +21,13 @@ typedef struct _type {
 	type_tag tag;
 	usize size;
 	usize alignment;
+	char *name;
 	union {
 		u8 integer;
 		u8 flt; // float
 		struct {
 			bool is_const;
 			bool is_volatile;
-			u16 alignment;
 			struct _type *child;
 		} ptr;
 		struct {

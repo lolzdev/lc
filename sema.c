@@ -12,6 +12,8 @@ typedef struct _res_node {
 
 typedef struct { res_node node; bool complete; } pair;
 
+typedef struct { u8 flags; char *name; } type_key;
+
 static struct { char *key; pair *value; } *types;
 static struct { char *key; type *value; } *type_reg;
 
@@ -32,6 +34,7 @@ static char *intern_string(sema *s, char *str, usize len)
 static type *create_integer(sema *s, char *name, u8 bits, bool sign)
 {
 	type *t = arena_alloc(s->allocator, sizeof(type));
+	t->name = name;
 	t->tag = sign ? TYPE_INTEGER : TYPE_UINTEGER;
 	t->data.integer = bits;
 	
@@ -47,6 +50,7 @@ static type *create_integer(sema *s, char *name, u8 bits, bool sign)
 static type *create_float(sema *s, char *name, u8 bits)
 {
 	type *t = arena_alloc(s->allocator, sizeof(type));
+	t->name = name;
 	t->tag = TYPE_FLOAT;
 	t->data.flt = bits;
 	
@@ -69,42 +73,51 @@ static void order_type(sema *s, ast_node *node)
 		t->data.structure.name_len = node->expr.structure.name_len;
 		t->data.structure.members = node->expr.structure.members;
 		
-		pair *graph_node = shget(types, intern_string(s, node->expr.structure.name, node->expr.structure.name_len));
+		char *k = intern_string(s, node->expr.structure.name, node->expr.structure.name_len);
+		t->name = k;
+		pair *graph_node = shget(types, k);
 		
 		if (!graph_node) {
 			graph_node = arena_alloc(s->allocator, sizeof(pair));
-			graph_node->node.value = t;
 			graph_node->node.in = NULL;
 			graph_node->node.out = NULL;
-		} else {
-			graph_node->complete = true;
 		}
+		graph_node->node.value = t;
 
 		member *m = t->data.structure.members;
 		while (m) {
-			char *name = intern_string(s, m->name, m->name_len);
+			if (m->type->type != NODE_IDENTIFIER) {
+				m = m->next;
+				continue;
+			}
+			char *name = intern_string(s, m->type->expr.string.start, m->type->expr.string.len);
 			pair *p = shget(types, name);
 			if (!p) {
 				p = arena_alloc(s->allocator, sizeof(pair));
-				p->complete = false;
 				p->node.out = NULL;
 				p->node.in = NULL;
+				p->node.value = NULL;
 				shput(types, name, p);
 			}
 
-			arrput(p->node.in, &graph_node->node);
-			arrput(graph_node->node.out, &p->node);
+			arrput(graph_node->node.in, &p->node);
+			arrput(p->node.out, &graph_node->node);
 
 			m = m->next;
 		}
 
-		shput(types, intern_string(s, t->data.structure.name, t->data.structure.name_len), graph_node);
+		shput(types, k, graph_node);
 	}
 }
 
 static void register_struct(sema *s, char *name, type *t)
 {
-
+	usize alignment = 0;
+	member *m = t->data.structure.members;
+	while (m) {
+		//if (alignment < m->
+		m = m->next;
+	}
 }
 
 static void register_union(sema *s, char *name, type *t)
@@ -145,6 +158,26 @@ end:
 		current = current->expr.unit_node.next;
 	}
 
+	//printf("digraph G {\n");
+
+	//for (int i=0; i < shlen(types); i++) {
+	//	pair *p = types[i].value;
+	//	res_node *n = &p->node;
+	//	type *t = n->value;
+	//	char *name = t->name;
+	//	for (int j=0; j < arrlen(n->out); j++) {
+	//		type *t1 = n->out[j]->value;
+	//		if (t1)
+	//			printf("%s->%s [color=\"red\"];\n", name, t1->name);
+	//	}
+	//	for (int j=0; j < arrlen(n->in); j++) {
+	//		type *t1 = n->in[j]->value;
+	//		if (t1)
+	//			printf("%s->%s [color=\"blue\"];\n", name, t1->name);
+	//	}
+	//}
+	//printf("}\n");
+
 	res_node **nodes = NULL;
 	res_node **ordered = NULL;
 	for (int i=0; i < shlen(types); i++) {
@@ -177,6 +210,7 @@ end:
 		type *t = ordered[i]->value;
 		if (t && (t->tag == TYPE_STRUCT || t->tag == TYPE_UNION)) {
 			char *name = intern_string(s, t->data.structure.name, t->data.structure.name_len);
+			printf("%s\n", name);
 			register_type(s, name, t);
 		}
 	}
