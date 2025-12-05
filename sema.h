@@ -9,13 +9,14 @@
 typedef enum {
 	TYPE_VOID,
 	TYPE_PTR,
+	TYPE_SLICE,
 	TYPE_FLOAT,
 	TYPE_INTEGER,
 	TYPE_UINTEGER,
 	TYPE_STRUCT,
 	TYPE_UNION,
-	TYPE_ENUM,
-	TYPE_GENERIC,
+	TYPE_ENUM, /* TODO */
+	TYPE_GENERIC, /* TODO */
 } type_tag;
 
 typedef struct _type {
@@ -33,8 +34,10 @@ typedef struct _type {
 		} ptr;
 		struct {
 			usize len;
+			bool is_const;
+			bool is_volatile;
 			struct _type *child;
-		} array;
+		} slice;
 		struct {
 			char *name;
 			usize name_len;
@@ -44,9 +47,15 @@ typedef struct _type {
 			char *name;
 			usize name_len;
 			variant *variants;
-		} enm;
+		} enm; /* TODO */
 	} data;
 } type;
+
+typedef struct {
+	char *name;
+	type *type;
+	type *parameters
+} prototype;
 
 typedef struct {
 	arena *allocator;

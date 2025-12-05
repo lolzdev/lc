@@ -110,6 +110,8 @@ typedef enum {
 
 #define PTR_SLICE 0x0
 #define PTR_RAW 0x1
+#define PTR_CONST 0x2
+#define PTR_VOLATILE 0x4
 
 #define LOOP_WHILE 0x1
 #define LOOP_UNTIL 0x2

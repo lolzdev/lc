@@ -856,6 +856,8 @@ static ast_node *parse_type(parser *p)
 		/* Array/slice type */
 		type = arena_alloc(p->allocator, sizeof(ast_node));
 		type->type = NODE_PTR_TYPE;
+		if (match(p, TOKEN_CONST)) type->expr.ptr_type.flags |= PTR_CONST;
+		if (match(p, TOKEN_VOLATILE)) type->expr.ptr_type.flags |= PTR_VOLATILE;
 		type->expr.ptr_type.flags |= PTR_SLICE;
 		type->expr.ptr_type.type = parse_type(p);
 		if (!type->expr.ptr_type.type) {
@@ -869,6 +871,8 @@ static ast_node *parse_type(parser *p)
 	} else if (match(p, TOKEN_STAR)) {
 		type = arena_alloc(p->allocator, sizeof(ast_node));
 		type->type = NODE_PTR_TYPE;
+		if (match(p, TOKEN_CONST)) type->expr.ptr_type.flags |= PTR_CONST;
+		if (match(p, TOKEN_VOLATILE)) type->expr.ptr_type.flags |= PTR_VOLATILE;
 		type->expr.ptr_type.flags |= PTR_RAW;
 		type->expr.ptr_type.type = parse_type(p);
 		if (!type->expr.ptr_type.type) {

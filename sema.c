@@ -129,6 +129,24 @@ static type *get_type(sema *s, ast_node *n)
 			t = shget(type_reg, name);
 			free(name);
 			return t;
+		case NODE_PTR_TYPE:
+			t = malloc(sizeof(type));
+			t->size = sizeof(usize);
+			t->alignment = sizeof(usize);
+			if (n->expr.ptr_type.flags & PTR_RAW) {
+				t->name = "ptr";
+				t->tag = TYPE_PTR;
+				t->data.ptr.child = get_type(s, n->expr.ptr_type.type);
+				t->data.ptr.is_const = (n->expr.ptr_type.flags & PTR_CONST) != 0;
+				t->data.ptr.is_volatile = (n->expr.ptr_type.flags & PTR_VOLATILE) != 0;
+			} else {
+				t->name = "slice";
+				t->tag = TYPE_SLICE;
+				t->data.slice.child = get_type(s, n->expr.ptr_type.type);
+				t->data.slice.is_const = (n->expr.ptr_type.flags & PTR_CONST) != 0;
+				t->data.slice.is_volatile = (n->expr.ptr_type.flags & PTR_VOLATILE) != 0;
+			}
+			return t;
 		default:
 			error(n, "expected type.");
 			return NULL;
@@ -144,6 +162,16 @@ static void register_struct(sema *s, char *name, type *t)
 	type *m_type = NULL;
 	while (m) {
 		m_type = get_type(s, m->type);
+
+		if (!m_type) {
+			error(m->type, "unknown type.");
+			return;
+		}
+
+		if (m_type->size == 0) {
+			error(m->type, "a struct member can't be of type `void`.");
+			return;
+		}
 
 		if (alignment < m_type->alignment) {
 			alignment = m_type->alignment;
@@ -165,6 +193,8 @@ static void register_struct(sema *s, char *name, type *t)
 	}
 
 	t->size = offset;
+
+	printf("%ld\n", t->size);
 }
 
 static void register_union(sema *s, char *name, type *t)
@@ -276,6 +306,7 @@ sema *sema_init(parser *p, arena *a)
 	types = NULL;
 	s->ast = p->ast;
 
+	register_type(s, "void", create_integer(s, "void", 0, false));
 	register_type(s, "u8", create_integer(s, "u8", 8, false));
 	register_type(s, "u16", create_integer(s, "u16", 16, false));
 	register_type(s, "u32", create_integer(s, "u32", 32, false));
