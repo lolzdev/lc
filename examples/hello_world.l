@@ -3,7 +3,7 @@ struct a {
 	u64 hi,
 }
 
-struct b {
+union b {
 	u32 ciao,
 	u32 test,
 	u32 test1,

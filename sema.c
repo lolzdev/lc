@@ -122,10 +122,12 @@ static void order_type(sema *s, ast_node *node)
 
 static type *get_type(sema *s, ast_node *n)
 {
+	char *name = NULL;
+	type *t = NULL;
 	switch (n->type) {
 		case NODE_IDENTIFIER:
-			char *name = intern_string(s, n->expr.string.start, n->expr.string.len);
-			type *t = shget(type_reg, name);
+			name = intern_string(s, n->expr.string.start, n->expr.string.len);
+			t = shget(type_reg, name);
 			free(name);
 			return t;
 		default:
@@ -169,13 +171,28 @@ static void register_struct(sema *s, char *name, type *t)
 	}
 
 	t->size = offset;
-
-	printf("size: %ld\n", t->size);
 }
 
 static void register_union(sema *s, char *name, type *t)
 {
+	usize alignment = 0;
+	usize size = 0;
+	member *m = t->data.structure.members;
+	while (m) {
+		type *m_type = get_type(s, m->type);
+		if (alignment < m_type->alignment) {
+			alignment = m_type->alignment;
+		}
 
+		if (size < m_type->size) {
+			size = m_type->size;
+		}
+		
+		m = m->next;
+	}
+
+	t->alignment = alignment;
+	t->size = size;
 }
 
 static void register_type(sema *s, char *name, type *t)
@@ -197,6 +214,12 @@ static void register_type(sema *s, char *name, type *t)
 		case TYPE_STRUCT:
 			register_struct(s, name, t);
 			break;
+		case TYPE_UNION:
+			register_union(s, name, t);
+			break;
+		default:
+			error(NULL, "registering an invalid type.");
+			return;
 	}
 
 	shput(type_reg, name, t);
@@ -207,29 +230,8 @@ static void analyze_unit(sema *s, ast_node *node)
 	ast_node *current = node;
 	while (current && current->type == NODE_UNIT) {
 		order_type(s, current->expr.unit_node.expr);
-end:
 		current = current->expr.unit_node.next;
 	}
-
-	//printf("digraph G {\n");
-
-	//for (int i=0; i < shlen(types); i++) {
-	//	pair *p = types[i].value;
-	//	res_node *n = &p->node;
-	//	type *t = n->value;
-	//	char *name = t->name;
-	//	for (int j=0; j < arrlen(n->out); j++) {
-	//		type *t1 = n->out[j]->value;
-	//		if (t1)
-	//			printf("%s->%s [color=\"red\"];\n", name, t1->name);
-	//	}
-	//	for (int j=0; j < arrlen(n->in); j++) {
-	//		type *t1 = n->in[j]->value;
-	//		if (t1)
-	//			printf("%s->%s [color=\"blue\"];\n", name, t1->name);
-	//	}
-	//}
-	//printf("}\n");
 
 	res_node **nodes = NULL;
 	res_node **ordered = NULL;
@@ -268,7 +270,6 @@ end:
 		type *t = ordered[i]->value;
 		if (t && (t->tag == TYPE_STRUCT || t->tag == TYPE_UNION)) {
 			char *name = t->name;
-			printf("%s\n", name);
 			register_type(s, name, t);
 		}
 	}
