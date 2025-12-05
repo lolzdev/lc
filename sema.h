@@ -1,6 +1,7 @@
 #ifndef SEMA_H
 #define SEMA_H
 
+#include <stdbool.h>
 #include "parser.h"
 #include "stb_ds.h"
 #include "utils.h"

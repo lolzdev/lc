@@ -2,7 +2,6 @@
 #include "sema.h"
 #include <string.h>
 #include <stdio.h>
-#include <stdbool.h>
 
 typedef struct _res_node {
 	struct _res_node **in;
@@ -140,23 +139,16 @@ static void register_struct(sema *s, char *name, type *t)
 {
 	usize alignment = 0;
 	member *m = t->data.structure.members;
-	while (m) {
-		type *m_type = get_type(s, m->type);
-		if (alignment < m_type->alignment) {
-			alignment = m_type->alignment;
-		}
-		
-		m = m->next;
-	}
-
-	t->alignment = alignment;
-
-	m = t->data.structure.members;
 
 	usize offset = 0;
 	type *m_type = NULL;
 	while (m) {
 		m_type = get_type(s, m->type);
+
+		if (alignment < m_type->alignment) {
+			alignment = m_type->alignment;
+		}
+
 		usize padding = (m_type->alignment - (offset % m_type->alignment)) % m_type->alignment;
 		offset += padding;
 		m->offset = offset;
@@ -164,6 +156,8 @@ static void register_struct(sema *s, char *name, type *t)
 
 		m = m->next;
 	}
+
+	t->alignment = alignment;
 
 	if (t->alignment > 0) {
 		usize trailing_padding = (t->alignment - (offset % t->alignment)) % t->alignment;
