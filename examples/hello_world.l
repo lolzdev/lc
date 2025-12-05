@@ -1,10 +1,11 @@
 struct b {
-	u32 ciao,
-	u32 test,
-	u32 test1,
+	i32 a,
+	u32 b,
+	u32 c,
 }
 
-u32 test(b hello)
+u32 test()
 {
-
+	u32 a = (u32)3;
+	a = (u32)2;
 }

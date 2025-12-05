@@ -396,6 +396,8 @@ lexer *lexer_init(char *source, usize size, arena *arena)
 	lex->source = source;
 
 	keywords = arena_alloc(arena, sizeof(trie_node));
+	trie_insert(keywords, lex->allocator, "true", TOKEN_TRUE);
+	trie_insert(keywords, lex->allocator, "false", TOKEN_FALSE);
 	trie_insert(keywords, lex->allocator, "struct", TOKEN_STRUCT);
 	trie_insert(keywords, lex->allocator, "enum", TOKEN_ENUM);
 	trie_insert(keywords, lex->allocator, "union", TOKEN_UNION);

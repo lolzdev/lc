@@ -8,6 +8,7 @@
 
 typedef enum {
 	TYPE_VOID,
+	TYPE_BOOL,
 	TYPE_PTR,
 	TYPE_SLICE,
 	TYPE_FLOAT,
@@ -42,6 +43,7 @@ typedef struct _type {
 			char *name;
 			usize name_len;
 			member *members;
+			struct { char *key; struct _type *value; } *member_types;
 		} structure;
 		struct {
 			char *name;
@@ -56,6 +58,11 @@ typedef struct {
 	type *type;
 	type **parameters;
 } prototype;
+
+typedef struct _scope {
+	struct _scope *parent;
+	struct { char *key; type *value; } *defs;
+} scope;
 
 typedef struct {
 	arena *allocator;

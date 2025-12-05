@@ -5,6 +5,7 @@
 #include "utils.h"
 #include <stdbool.h>
 
+struct _type;
 struct _ast_node;
 
 typedef enum {
@@ -12,21 +13,14 @@ typedef enum {
 	OP_MINUS, // -
 	OP_DIV, // /
 	OP_MUL, // *
-	OP_EQ, // ==
-	OP_ASSIGN, // =
-	OP_AND, // &&
-	OP_OR, // ||
-	OP_NEQ, // !=
-	OP_GT, // >
-	OP_LT, // <
-	OP_GE, // >=
-	OP_LE, // <=
-	OP_RSHIFT_EQ, // >>=
-	OP_LSHIFT_EQ, // <<=
+	OP_MOD, // %
 	OP_BOR, // |
 	OP_BAND, // &
 	OP_BXOR, // ^
-	OP_MOD, // %
+
+	OP_ASSIGN, // =
+	OP_RSHIFT_EQ, // >>=
+	OP_LSHIFT_EQ, // <<=
 	OP_PLUS_EQ, // +=
 	OP_MINUS_EQ, // -=
 	OP_DIV_EQ, // /=
@@ -35,6 +29,15 @@ typedef enum {
 	OP_BAND_EQ, // &=
 	OP_BXOR_EQ, // ^=
 	OP_MOD_EQ, // %=
+
+	OP_EQ, // ==
+	OP_AND, // &&
+	OP_OR, // ||
+	OP_NEQ, // !=
+	OP_GT, // >
+	OP_LT, // <
+	OP_GE, // >=
+	OP_LE, // <=
 } binary_op;
 
 typedef enum {
@@ -79,32 +82,34 @@ typedef enum {
 	NODE_FLOAT,
 	NODE_STRING,
 	NODE_CHAR,
+	NODE_BOOL,
 	NODE_CAST,
 	NODE_UNARY,
 	NODE_BINARY,
 	NODE_RANGE,
 	NODE_ARRAY_SUBSCRIPT,
-	NODE_ACCESS,
-	NODE_CALL,
 	NODE_POSTFIX,
+	NODE_CALL,
+	NODE_ACCESS,
+	NODE_STRUCT_INIT,
+	NODE_TERNARY, /* TODO */
+
 	NODE_BREAK,
 	NODE_RETURN,
-	NODE_LABEL,
-	NODE_GOTO,
 	NODE_IMPORT,
 	NODE_FOR,
 	NODE_WHILE,
 	NODE_IF,
-	NODE_COMPOUND,
+	NODE_VAR_DECL,
+	NODE_LABEL,
+	NODE_GOTO,
+
 	NODE_ENUM,
 	NODE_STRUCT,
 	NODE_UNION,
-	NODE_VAR_DECL,
 	NODE_FUNCTION,
 	NODE_PTR_TYPE,
-	NODE_TERNARY, /* TODO */
 	NODE_SWITCH, /* TODO */
-	NODE_STRUCT_INIT,
 	NODE_UNIT,
 } node_type;
 
@@ -120,6 +125,7 @@ typedef enum {
 typedef struct _ast_node {
 	node_type type;
 	source_pos position;
+	struct _type *expr_type;
 	union {
 		struct {
 			struct _ast_node *type;
@@ -138,6 +144,7 @@ typedef struct _ast_node {
 			struct _ast_node *right;
 			unary_op operator;
 		} unary;
+		u8 boolean;
 		i64 integer;
 		f64 flt; // float
 		struct {
@@ -183,9 +190,9 @@ typedef struct _ast_node {
 		struct {
 			/* These should be lists of unit_node */
 			struct _ast_node *slices;
+			usize slice_len;
 			struct _ast_node *captures;
-			int capture_len;
-			int slice_len;
+			usize capture_len;
 			struct _ast_node* body;
 		} fr; // for
 		struct {

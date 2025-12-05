@@ -428,15 +428,13 @@ ast_node *parse_expression(parser *p)
 			left = node;
 
 		}
-		return left;
 	}
 
 	/*
 	 * If after parsing an expression a `.` character
 	 * is found, it should be a member access expression.
 	 */
-	if (match_peek(p, TOKEN_DOT))
-	{
+	if (match_peek(p, TOKEN_DOT) && p->tokens->next && p->tokens->next->type != TOKEN_LCURLY) {
 		while (match(p, TOKEN_DOT)) {
 			if (!match_peek(p, TOKEN_IDENTIFIER)) {
 				error(p, "expected identifier after member access.");
@@ -450,7 +448,6 @@ ast_node *parse_expression(parser *p)
 
 			left = node;
 		}
-		return left;
 	}
 
 	/*
@@ -749,7 +746,7 @@ parse_captures:
 	arena_start = arena_snapshot(p->allocator);
 	node->expr.fr.captures = arena_alloc(p->allocator, sizeof(ast_node));
 	node->expr.fr.captures->type = NODE_UNIT;
-	node->expr.fr.captures->expr.unit_node.expr = parse_expression(p);
+	node->expr.fr.captures->expr.unit_node.expr = parse_factor(p);
 	if (node->expr.fr.captures->expr.unit_node.expr && node->expr.fr.captures->expr.unit_node.expr->type != NODE_IDENTIFIER) {
 		error(p, "captures must be identifiers.");
 		arena_reset_to_snapshot(p->allocator, arena_start);
@@ -776,7 +773,7 @@ parse_captures:
 				tail->expr.unit_node.next->expr.unit_node.expr = expr;
 				tail = tail->expr.unit_node.next;
 				tail->type = NODE_UNIT;
-				expr = parse_expression(p);
+				expr = parse_factor(p);
 				if (!expr) {
 					error(p, "expected `|`.");
 					arena_reset_to_snapshot(p->allocator, arena_start);

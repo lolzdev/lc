@@ -123,12 +123,6 @@ void print_ast(ast_node *node, int depth) {
 				current = current->expr.unit_node.next;
 			}
 			break;
-		case NODE_COMPOUND: 
-			printf("Block\n");
-			for (usize i = 0; i < node->expr.compound.stmt_len; ++i) {
-				print_ast(node->expr.compound.statements[i], depth + 1);
-			}
-			break;
 		case NODE_CALL:
 			printf("Call: %.*s\n", (int)node->expr.call.name_len, node->expr.call.name);
 			current = node->expr.call.parameters;
