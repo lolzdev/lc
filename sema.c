@@ -29,7 +29,8 @@ static void error(ast_node *n, char *msg)
 
 static char *intern_string(sema *s, char *str, usize len)
 {
-	char *ptr = arena_alloc(s->allocator, len + 1);
+	(void) s;
+	char *ptr = malloc(len + 1);
 	memcpy(ptr, str, len);
 	ptr[len] = '\0';
 	return ptr;
@@ -119,14 +120,57 @@ static void order_type(sema *s, ast_node *node)
 	}
 }
 
+static type *get_type(sema *s, ast_node *n)
+{
+	switch (n->type) {
+		case NODE_IDENTIFIER:
+			char *name = intern_string(s, n->expr.string.start, n->expr.string.len);
+			type *t = shget(type_reg, name);
+			free(name);
+			return t;
+		default:
+			error(n, "expected type.");
+			return NULL;
+	}
+}
+
 static void register_struct(sema *s, char *name, type *t)
 {
 	usize alignment = 0;
 	member *m = t->data.structure.members;
 	while (m) {
-		//if (alignment < m->
+		type *m_type = get_type(s, m->type);
+		if (alignment < m_type->alignment) {
+			alignment = m_type->alignment;
+		}
+		
 		m = m->next;
 	}
+
+	t->alignment = alignment;
+
+	m = t->data.structure.members;
+
+	usize offset = 0;
+	type *m_type = NULL;
+	while (m) {
+		m_type = get_type(s, m->type);
+		usize padding = (m_type->alignment - (offset % m_type->alignment)) % m_type->alignment;
+		offset += padding;
+		m->offset = offset;
+		offset += m_type->size;
+
+		m = m->next;
+	}
+
+	if (t->alignment > 0) {
+		usize trailing_padding = (t->alignment - (offset % t->alignment)) % t->alignment;
+		offset += trailing_padding;
+	}
+
+	t->size = offset;
+
+	printf("size: %ld\n", t->size);
 }
 
 static void register_union(sema *s, char *name, type *t)
@@ -216,7 +260,7 @@ end:
 		}
 	}
 
-	if (arrlen(ordered) != node_count) {
+	if (arrlen(ordered) < node_count) {
 		error(NULL, "cycling struct definition.");
 	}
 

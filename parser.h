@@ -57,6 +57,7 @@ typedef struct _member {
 	char *name;
 	usize name_len;
 	struct _member *next;
+	usize offset;
 } member;
 
 typedef struct {
