@@ -16,6 +16,8 @@ typedef struct { u8 flags; char *name; } type_key;
 static struct { char *key; pair *value; } *types;
 static struct { char *key; type *value; } *type_reg;
 
+static struct { char *key; prototype *value; } *prototypes;
+
 /* Print the error message and sync the parser. */
 static void error(ast_node *n, char *msg)
 {
@@ -249,14 +251,8 @@ static void register_type(sema *s, char *name, type *t)
 	shput(type_reg, name, t);
 }
 
-static void analyze_unit(sema *s, ast_node *node)
+static void create_types(sema *s)
 {
-	ast_node *current = node;
-	while (current && current->type == NODE_UNIT) {
-		order_type(s, current->expr.unit_node.expr);
-		current = current->expr.unit_node.next;
-	}
-
 	res_node **nodes = NULL;
 	res_node **ordered = NULL;
 	usize node_count = shlen(types);
@@ -296,6 +292,50 @@ static void analyze_unit(sema *s, ast_node *node)
 			char *name = t->name;
 			register_type(s, name, t);
 		}
+	}
+}
+
+static void create_prototype(sema *s, ast_node *node)
+{
+	prototype *p = arena_alloc(s->allocator, sizeof(prototype));
+	p->name = intern_string(s, node->expr.function.name, node->expr.function.name_len);
+
+	member *m = node->expr.function.parameters;
+	while (m) {
+		type *t = get_type(s, m->type);
+		if (!t) {
+			error(m->type, "unknown type.");
+			return;
+		}
+
+		arrput(p->parameters, t);
+		m = m->next;
+	}
+
+	p->type = get_type(s, node->expr.function.type);
+	shput(prototypes, p->name, p);
+}
+
+static void analyze_unit(sema *s, ast_node *node)
+{
+	ast_node *current = node;
+	while (current && current->type == NODE_UNIT) {
+		order_type(s, current->expr.unit_node.expr);
+		current = current->expr.unit_node.next;
+	}
+
+	create_types(s);
+
+	current = node;
+	while (current && current->type == NODE_UNIT) {
+		if (current->expr.unit_node.expr->type == NODE_FUNCTION) {
+			create_prototype(s, current->expr.unit_node.expr);
+		}
+		current = current->expr.unit_node.next;
+	}
+
+	for (int i=0; i < shlen(prototypes); i++) {
+		printf("f: %s\n", prototypes[i].key);
 	}
 }
 

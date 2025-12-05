@@ -54,7 +54,7 @@ typedef struct _type {
 typedef struct {
 	char *name;
 	type *type;
-	type *parameters
+	type **parameters;
 } prototype;
 
 typedef struct {
