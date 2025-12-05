@@ -213,6 +213,20 @@ static ast_node *parse_factor(parser *p)
 		node->expr.flt = parse_float(t->lexeme, t->lexeme_len);
 		return node;
 	}
+	else if (match(p, TOKEN_TRUE)) {
+		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+		node->type = NODE_BOOL;
+		node->position = p->previous->position;
+		node->expr.boolean = 1;
+		return node;
+	}
+	else if (match(p, TOKEN_FALSE)) {
+		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+		node->type = NODE_BOOL;
+		node->position = p->previous->position;
+		node->expr.boolean = 0;
+		return node;
+	}
 	else if (match_peek(p, TOKEN_IDENTIFIER))
 	{
 		/* If a `(` is found after an identifier, it should be a call. */
@@ -396,41 +410,47 @@ ast_node *parse_expression(parser *p)
 	 * If after parsing an expression a `[` character
 	 * is found, it should be an array subscript expression.
 	 */
-	if (match(p, TOKEN_LSQUARE))
-	{
-		ast_node *index = parse_expression(p);
-		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
-		node->type = NODE_ARRAY_SUBSCRIPT;
-		node->position = p->previous->position;
-		node->expr.subscript.expr = left;
-		node->expr.subscript.index = index;
+	if (match_peek(p, TOKEN_LSQUARE)) {
+		while (match(p, TOKEN_LSQUARE)) {
+			ast_node *index = parse_expression(p);
+			ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+			node->type = NODE_ARRAY_SUBSCRIPT;
+			node->position = p->previous->position;
+			node->expr.subscript.expr = left;
+			node->expr.subscript.index = index;
 
-		if (!match(p, TOKEN_RSQUARE))
-		{
-			error(p, "expected `]`.");
-			return NULL;
+			if (!match(p, TOKEN_RSQUARE))
+			{
+				error(p, "expected `]`.");
+				return NULL;
+			}
+
+			left = node;
+
 		}
-		return node;
+		return left;
 	}
 
 	/*
 	 * If after parsing an expression a `.` character
 	 * is found, it should be a member access expression.
 	 */
-	if (match(p, TOKEN_DOT))
+	if (match_peek(p, TOKEN_DOT))
 	{
-		if (!match_peek(p, TOKEN_IDENTIFIER))
-		{
-			error(p, "expected identifier after member access.");
-			return NULL;
-		}
-		ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
-		node->type = NODE_ACCESS;
-		node->position = p->previous->position;
-		node->expr.access.expr = left;
-		node->expr.access.member = parse_expression(p);
+		while (match(p, TOKEN_DOT)) {
+			if (!match_peek(p, TOKEN_IDENTIFIER)) {
+				error(p, "expected identifier after member access.");
+				return NULL;
+			}
+			ast_node *node = arena_alloc(p->allocator, sizeof(ast_node));
+			node->type = NODE_ACCESS;
+			node->position = p->previous->position;
+			node->expr.access.expr = left;
+			node->expr.access.member = parse_factor(p);
 
-		return node;
+			left = node;
+		}
+		return left;
 	}
 
 	/*
