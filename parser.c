@@ -1282,7 +1282,7 @@ static void parse(parser *p)
 	ast_node *expr = parse_statement(p);
 	while (expr) {
 		if (expr->type != NODE_FUNCTION && expr->type != NODE_VAR_DECL && expr->type != NODE_IMPORT &&
-			expr->type != NODE_STRUCT && expr->type != NODE_ENUM && expr->type != NODE_ENUM) {
+			expr->type != NODE_STRUCT && expr->type != NODE_UNION && expr->type != NODE_ENUM) {
 			error(p, "expected function, struct, enum, union, global variable or import statement.");
 			return;
 		}
